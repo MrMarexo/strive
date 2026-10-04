@@ -92,7 +92,9 @@ interface AppState {
 ```
 
 - **First launch / missing / invalid data:** fresh state — `points: 0`, `lastSettledDate: yesterday`, `completions: {}`, `graceWeek: mondayOf(today)`. Invalid data logs a console warning.
-- **Save failure** (quota, private mode): caught and logged; app continues in memory.
+- **Save failure** (quota, private mode, storage access blocked): caught and logged; app continues in memory.
+- **Future `lastSettledDate`** more than 7 days after today (clock jump, hand edit): reset to yesterday, keeping points and only the current week's completions up to today. Impossible calendar dates (e.g. `2026-13-45`) are invalid.
+- **Multiple tabs:** a tab adopts the state another tab saves (`storage` event), so a stale tab never overwrites newer progress.
 
 ## 7. Settlement
 
@@ -109,11 +111,11 @@ Properties:
 - **Gaps:** long absences settle every missed day as failed, including Sunday penalties for each spanned week.
 - Today is never settled; it remains editable.
 
-**Triggers:** on app load, on window `focus`/`visibilitychange` to visible, and every 60 seconds while open (catches midnight rollover).
+**Triggers:** on app load, right after local midnight (timer), on window `focus`/`visibilitychange` to visible, and every 60 seconds while open (covers sleep/wake and clock changes).
 
 ## 8. Actions
 
-Pure functions, applied to **today only**:
+Pure functions, applied to **today only**. Both are no-ops when `today <= lastSettledDate` (that day is already scored, e.g. the clock moved back):
 
 - `complete(state, taskId, todayKey)`: increments today's count unless `maxPerDay` is reached (no-op otherwise).
 - `undo(state, taskId, todayKey)`: decrements today's count, never below 0.
@@ -122,7 +124,10 @@ Pure functions, applied to **today only**:
 
 - `weekCount(state, taskId, todayKey)`: completions Monday→today for the current week.
 - `remainingThisWeek(...)`: `max(0, target − weekCount)`.
-- `isAtRisk(...)`: weekly task with `maxPerDay === 1` where `remaining > availableDays`. `availableDays` = days left in the week after today, plus 1 if the task is not yet done today. E.g. Saturday, 3 left, not done today → available 2 → at risk. Tasks with unlimited `maxPerDay` (chores) are never at risk.
+- `availableDays` (weekly tasks with `maxPerDay === 1` only) = days left in the week after today, plus 1 if the task is not yet done today.
+- `isAtRisk(...)`: `remaining > 0 && remaining === availableDays` — every remaining day is needed. E.g. Saturday, 2 left, not done today → at risk.
+- `willMiss(...)`: `max(0, remaining − availableDays)` — sessions that can no longer fit. E.g. Saturday, 3 left, not done today → 1.
+- Tasks with unlimited `maxPerDay` (chores) and daily tasks are never at risk and never "will miss".
 - `pendingToday(state, todayKey)`: points today's completions would earn if settled now (daily +1 each; weekly +1 each within the cap). Display only; excludes penalties.
 
 ## 10. UI
@@ -144,7 +149,7 @@ Single screen, retro old-school video game / terminal aesthetic.
 **Task grid** — responsive: 1 column (phone), 2 (tablet), 4 (desktop).
 
 **TaskCard** (maxPerDay = 1)
-- 10×10 pixel sprite, task name, subtitle: `DAILY` or `N LEFT THIS WEEK` / `TARGET MET`, plus `AT RISK` label when applicable.
+- 10×10 pixel sprite, task name, subtitle: `DAILY` or `N LEFT THIS WEEK` / `TARGET MET`, plus `WILL MISS N` or `AT RISK` label when applicable.
 - Toggle button: `[ MARK DONE ]` ↔ `[ DONE ✓ ]` (tapping done undoes, today only).
 
 **CounterCard** (chores)

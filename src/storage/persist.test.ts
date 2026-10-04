@@ -44,6 +44,7 @@ describe('persist', () => {
     ['negative points', JSON.stringify({ ...valid, points: -3 })],
     ['string points', JSON.stringify({ ...valid, points: '42' })],
     ['bad date key', JSON.stringify({ ...valid, lastSettledDate: 'yesterday' })],
+    ['impossible calendar date', JSON.stringify({ ...valid, lastSettledDate: '2026-13-45' })],
     ['missing graceWeek', JSON.stringify({ ...valid, graceWeek: undefined })],
     ['unknown task id', JSON.stringify({ ...valid, completions: { '2026-09-30': { napping: 1 } } })],
     ['fractional count', JSON.stringify({ ...valid, completions: { '2026-09-30': { reading: 0.5 } } })],
@@ -72,5 +73,20 @@ describe('persist', () => {
     const broken = { setItem: () => { throw new Error('quota'); } } as unknown as Storage;
     expect(() => save(valid, broken)).not.toThrow();
     expect(warn).toHaveBeenCalled();
+  });
+  it('repairs a lastSettledDate far in the future, keeping points and current completions', () => {
+    save({
+      ...valid,
+      lastSettledDate: '2027-10-01',
+      completions: { '2026-09-30': { reading: 1 }, '2027-10-01': { reading: 1 } },
+    });
+    expect(load(TODAY)).toEqual({ ...valid, lastSettledDate: '2026-09-29', completions: { '2026-09-30': { reading: 1 } } });
+    expect(warn).toHaveBeenCalled();
+  });
+
+  it('leaves a lastSettledDate a few days ahead alone', () => {
+    const drifted = { ...valid, lastSettledDate: '2026-10-02' };
+    save(drifted);
+    expect(load(TODAY)).toEqual(drifted);
   });
 });

@@ -54,4 +54,10 @@ describe('App', () => {
     fireEvent.click(minus);
     expect(within(chores).getByText('1')).toBeInTheDocument();
   });
+  it('warns how many weekly sessions will be missed', () => {
+    vi.setSystemTime(new Date(2026, 9, 4, 10, 0)); // Sunday
+    render(<App />);
+    const coding = screen.getByRole('article', { name: 'Coding' });
+    expect(within(coding).getByText(/WILL MISS 4/)).toBeInTheDocument();
+  });
 });

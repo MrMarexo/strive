@@ -44,3 +44,11 @@ describe('undo', () => {
     expect(undo(s, 'reading', TODAY)).toBe(s);
   });
 });
+
+describe('settled days', () => {
+  it('ignores taps on a day that is already settled', () => {
+    const s = state({ '2026-09-29': { chores: 1 } });
+    expect(complete(s, 'reading', '2026-09-29')).toBe(s);
+    expect(undo(s, 'chores', '2026-09-29')).toBe(s);
+  });
+});

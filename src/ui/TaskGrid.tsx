@@ -1,5 +1,5 @@
 import type { DateKey } from '../domain/dates';
-import { isAtRisk, remainingThisWeek, todayCount } from '../domain/selectors';
+import { isAtRisk, remainingThisWeek, todayCount, willMiss } from '../domain/selectors';
 import { TASKS, type TaskId } from '../domain/tasks';
 import type { AppState } from '../domain/types';
 import { CounterCard } from './CounterCard';
@@ -21,6 +21,7 @@ export function TaskGrid({ state, today, onComplete, onUndo }: TaskGridProps) {
           todayCount: todayCount(state, task.id, today),
           remaining: remainingThisWeek(state, task, today),
           atRisk: isAtRisk(state, task, today),
+          willMiss: willMiss(state, task, today),
           onComplete: () => onComplete(task.id),
           onUndo: () => onUndo(task.id),
         };

@@ -1,4 +1,4 @@
-import { addDays, mondayOf, type DateKey } from '../domain/dates';
+import { addDays, fromKey, mondayOf, toKey, type DateKey } from '../domain/dates';
 import { TASKS } from '../domain/tasks';
 import type { AppState } from '../domain/types';
 
@@ -6,6 +6,7 @@ export const STORAGE_KEY = 'strive:v1';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TASK_IDS = new Set<string>(TASKS.map((t) => t.id));
+const MAX_CLOCK_DRIFT_DAYS = 7;
 
 export function freshState(today: DateKey): AppState {
   return { version: 1, points: 0, lastSettledDate: addDays(today, -1), completions: {}, graceWeek: mondayOf(today) };
@@ -16,7 +17,7 @@ function isCount(value: unknown): boolean {
 }
 
 function isDateKey(value: unknown): value is string {
-  return typeof value === 'string' && DATE_RE.test(value);
+  return typeof value === 'string' && DATE_RE.test(value) && toKey(fromKey(value)) === value;
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -38,6 +39,18 @@ export function isValidState(value: unknown): value is AppState {
 
 // Reading window.localStorage itself throws when the browser blocks site data,
 // so it is only touched inside the try blocks.
+// A lastSettledDate far in the future (clock jumped ahead, hand edit) would block
+// settlement until that date. Pull it back to yesterday, keeping the points.
+function repairFutureDate(state: AppState, today: DateKey): AppState {
+  if (state.lastSettledDate <= addDays(today, MAX_CLOCK_DRIFT_DAYS)) return state;
+  console.warn('Strive: last settled date is in the future, resetting it to yesterday');
+  const monday = mondayOf(today);
+  const completions = Object.fromEntries(
+    Object.entries(state.completions).filter(([date]) => date >= monday && date <= today),
+  );
+  return { ...state, lastSettledDate: addDays(today, -1), completions };
+}
+
 export function load(today: DateKey, storage?: Storage): AppState {
   let raw: string | null;
   try {
@@ -50,7 +63,7 @@ export function load(today: DateKey, storage?: Storage): AppState {
 
   try {
     const parsed: unknown = JSON.parse(raw);
-    if (isValidState(parsed)) return parsed;
+    if (isValidState(parsed)) return repairFutureDate(parsed, today);
   } catch {
     // fall through to the warning below
   }

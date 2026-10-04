@@ -50,12 +50,25 @@ export function useAppState() {
       const today = currentKey();
       dispatch({ type: 'replace', state: load(today), today });
     };
+    // Fire right after local midnight so the new day shows immediately; the
+    // interval still covers sleep/wake and clock changes.
+    let midnight: ReturnType<typeof setTimeout>;
+    const scheduleMidnight = () => {
+      const now = new Date();
+      const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      midnight = setTimeout(() => {
+        tick();
+        scheduleMidnight();
+      }, next.getTime() - now.getTime() + 100);
+    };
+    scheduleMidnight();
     const interval = setInterval(tick, 60_000);
     window.addEventListener('focus', tick);
     window.addEventListener('storage', onStorage);
     document.addEventListener('visibilitychange', onVisibility);
     return () => {
       clearInterval(interval);
+      clearTimeout(midnight);
       window.removeEventListener('focus', tick);
       window.removeEventListener('storage', onStorage);
       document.removeEventListener('visibilitychange', onVisibility);

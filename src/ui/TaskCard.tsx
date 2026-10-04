@@ -8,11 +8,12 @@ export interface CardProps {
   todayCount: number;
   remaining: number | null;
   atRisk: boolean;
+  willMiss: number;
   onComplete: () => void;
   onUndo: () => void;
 }
 
-export function TaskCard({ task, todayCount, remaining, atRisk, onComplete, onUndo }: CardProps) {
+export function TaskCard({ task, todayCount, remaining, atRisk, willMiss, onComplete, onUndo }: CardProps) {
   const done = todayCount > 0;
   return (
     <article className="card" aria-label={task.name}>
@@ -20,6 +21,7 @@ export function TaskCard({ task, todayCount, remaining, atRisk, onComplete, onUn
       <h2>{task.name.toUpperCase()}</h2>
       <p className="sub">
         {cadenceLabel(remaining)}
+        {willMiss > 0 && <span className="risk"> · WILL MISS {willMiss}</span>}
         {atRisk && <span className="risk"> · AT RISK</span>}
       </p>
       <button

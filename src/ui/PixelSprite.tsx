@@ -6,7 +6,7 @@ interface PixelSpriteProps {
 
 export function PixelSprite({ map, title, size = 80 }: PixelSpriteProps) {
   const rows = map.length;
-  const cols = map[0]?.length ?? 0;
+  const cols = map[0].length;
   return (
     <svg
       className="sprite"

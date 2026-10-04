@@ -82,4 +82,13 @@ describe('useAppState', () => {
     act(() => result.current.complete('running'));
     expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).completions['2026-09-30']).toEqual({ reading: 1, running: 1 });
   });
+  it('settles right at midnight instead of up to a minute later', () => {
+    seed({ version: 1, points: 50, graceWeek: '2026-09-21', lastSettledDate: '2026-09-28', completions: {} });
+    vi.setSystemTime(new Date(2026, 8, 29, 23, 59, 58));
+    const { result } = renderHook(() => useAppState());
+
+    act(() => vi.advanceTimersByTime(3_000));
+    expect(result.current.today).toBe('2026-09-30');
+    expect(result.current.state.lastSettledDate).toBe('2026-09-29');
+  });
 });
