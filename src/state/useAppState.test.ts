@@ -70,4 +70,16 @@ describe('useAppState', () => {
     act(() => { window.dispatchEvent(new Event('focus')); });
     expect(result.current.state.lastSettledDate).toBe('2026-09-29');
   });
+  it('picks up progress saved by another tab', () => {
+    vi.setSystemTime(new Date(2026, 8, 30, 10, 0));
+    const { result } = renderHook(() => useAppState());
+
+    seed({ version: 1, points: 7, graceWeek: '2026-09-28', lastSettledDate: '2026-09-29', completions: { '2026-09-30': { reading: 1 } } });
+    act(() => { window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY })); });
+    expect(result.current.state.points).toBe(7);
+    expect(result.current.state.completions['2026-09-30']).toEqual({ reading: 1 });
+
+    act(() => result.current.complete('running'));
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).completions['2026-09-30']).toEqual({ reading: 1, running: 1 });
+  });
 });

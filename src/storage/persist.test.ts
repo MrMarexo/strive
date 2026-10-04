@@ -20,7 +20,7 @@ describe('persist', () => {
     warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
   });
 
-  afterEach(() => warn.mockRestore());
+  afterEach(() => vi.restoreAllMocks());
 
   it('creates a fresh state whose first scored day is today', () => {
     expect(freshState(TODAY)).toEqual({
@@ -52,6 +52,15 @@ describe('persist', () => {
     localStorage.setItem(STORAGE_KEY, raw);
     expect(load(TODAY)).toEqual(freshState(TODAY));
     expect(warn).toHaveBeenCalled();
+  });
+
+  it('survives a browser that blocks access to localStorage itself', () => {
+    const blocked = vi.spyOn(window, 'localStorage', 'get').mockImplementation(() => {
+      throw new DOMException('denied', 'SecurityError');
+    });
+    expect(load(TODAY)).toEqual(freshState(TODAY));
+    expect(() => save(valid)).not.toThrow();
+    expect(blocked).toHaveBeenCalled();
   });
 
   it('survives storage that throws on read', () => {

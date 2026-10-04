@@ -4,10 +4,11 @@ import { toKey, type DateKey } from '../domain/dates';
 import { settle } from '../domain/settle';
 import type { TaskId } from '../domain/tasks';
 import type { AppState } from '../domain/types';
-import { load, save } from '../storage/persist';
+import { STORAGE_KEY, load, save } from '../storage/persist';
 
 type Action =
   | { type: 'settle'; today: DateKey }
+  | { type: 'replace'; state: AppState; today: DateKey }
   | { type: 'complete' | 'undo'; id: TaskId; today: DateKey };
 
 function reducer(state: AppState, action: Action): AppState {
@@ -15,6 +16,8 @@ function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case 'settle':
       return settled;
+    case 'replace':
+      return settle(action.state, action.today);
     case 'complete':
       return complete(settled, action.id, action.today);
     case 'undo':
@@ -41,12 +44,20 @@ export function useAppState() {
     const onVisibility = () => {
       if (document.visibilityState === 'visible') tick();
     };
+    // Another tab saved: adopt its state so our next save doesn't overwrite it.
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== STORAGE_KEY) return;
+      const today = currentKey();
+      dispatch({ type: 'replace', state: load(today), today });
+    };
     const interval = setInterval(tick, 60_000);
     window.addEventListener('focus', tick);
+    window.addEventListener('storage', onStorage);
     document.addEventListener('visibilitychange', onVisibility);
     return () => {
       clearInterval(interval);
       window.removeEventListener('focus', tick);
+      window.removeEventListener('storage', onStorage);
       document.removeEventListener('visibilitychange', onVisibility);
     };
   }, []);

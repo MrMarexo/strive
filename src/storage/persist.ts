@@ -36,10 +36,12 @@ export function isValidState(value: unknown): value is AppState {
   );
 }
 
-export function load(today: DateKey, storage: Storage = localStorage): AppState {
+// Reading window.localStorage itself throws when the browser blocks site data,
+// so it is only touched inside the try blocks.
+export function load(today: DateKey, storage?: Storage): AppState {
   let raw: string | null;
   try {
-    raw = storage.getItem(STORAGE_KEY);
+    raw = (storage ?? window.localStorage).getItem(STORAGE_KEY);
   } catch (error) {
     console.warn('Strive: storage unavailable, starting fresh', error);
     return freshState(today);
@@ -56,9 +58,9 @@ export function load(today: DateKey, storage: Storage = localStorage): AppState 
   return freshState(today);
 }
 
-export function save(state: AppState, storage: Storage = localStorage): void {
+export function save(state: AppState, storage?: Storage): void {
   try {
-    storage.setItem(STORAGE_KEY, JSON.stringify(state));
+    (storage ?? window.localStorage).setItem(STORAGE_KEY, JSON.stringify(state));
   } catch (error) {
     console.warn('Strive: could not save progress', error);
   }
