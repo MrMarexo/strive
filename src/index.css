@@ -1,1 +1,179 @@
-body { background: #000; color: #b48cff; }
+:root {
+  --bg: #000;
+  --fg: #b48cff;
+  --dim: #5a3f8c;
+  --border: 2px solid var(--fg);
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--fg);
+}
+
+body {
+  font-family: 'VT323', ui-monospace, monospace;
+  font-size: 22px;
+  line-height: 1.2;
+  -webkit-font-smoothing: none;
+}
+
+.app {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+.header {
+  border: var(--border);
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  display: grid;
+  gap: 6px;
+}
+
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.rank {
+  font-size: 48px;
+  font-weight: normal;
+  letter-spacing: 2px;
+}
+
+.cursor,
+.risk {
+  animation: blink 1s steps(1) infinite;
+}
+
+.cursor {
+  margin-left: 4px;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.points {
+  font-size: 32px;
+}
+
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+
+.bar-cells {
+  white-space: nowrap;
+}
+
+.bar-empty,
+.meta,
+.sub {
+  color: var(--dim);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+@media (min-width: 600px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1000px) {
+  .grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.card {
+  border: var(--border);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.card h2 {
+  font-size: 28px;
+  font-weight: normal;
+}
+
+.sprite {
+  fill: var(--fg);
+}
+
+.sub {
+  min-height: 1.2em;
+}
+
+.risk {
+  color: var(--fg);
+}
+
+.btn {
+  font: inherit;
+  background: var(--bg);
+  color: var(--fg);
+  border: var(--border);
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.btn:hover:not(:disabled) {
+  box-shadow: 4px 4px 0 var(--dim);
+}
+
+.btn:focus-visible {
+  outline: 2px dashed var(--fg);
+  outline-offset: 3px;
+}
+
+.btn-done {
+  background: var(--fg);
+  color: var(--bg);
+}
+
+.btn:disabled {
+  color: var(--dim);
+  border-color: var(--dim);
+  cursor: default;
+}
+
+.card > .btn,
+.counter {
+  margin-top: auto;
+}
+
+.counter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.count {
+  font-size: 32px;
+  min-width: 2ch;
+}
