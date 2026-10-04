@@ -43,3 +43,11 @@ export function getRank(points: number): RankInfo {
     toNext: next.min - points,
   };
 }
+
+export function rankSlug(title: string): string {
+  return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+export function rankBySlug(slug: string): Rank | undefined {
+  return RANKS.find((rank) => rankSlug(rank.title) === slug);
+}

@@ -5,7 +5,7 @@ import type { AppState } from './types';
 const TODAY = '2026-09-30';
 
 function state(completions: AppState['completions'] = {}): AppState {
-  return { version: 1, points: 10, lastSettledDate: '2026-09-29', completions, graceWeek: '2026-09-21', weekNumber: 1, playerName: 'no_name' };
+  return { version: 1, points: 10, lastSettledDate: '2026-09-29', completions, graceWeek: '2026-09-21', weekNumber: 1, playerName: 'no_name', rankDays: {} };
 }
 
 describe('complete', () => {

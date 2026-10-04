@@ -1,5 +1,6 @@
 import { countOn, weekCountThrough, weeklyAwarded } from './counts';
 import { daysLeftAfter, type DateKey } from './dates';
+import { RANKS, getRank } from './ranks';
 import { COMPLETE_POINTS } from './settle';
 import { TASKS, type TaskDef, type TaskId } from './tasks';
 import type { AppState } from './types';
@@ -35,4 +36,18 @@ export function pendingToday(state: AppState, today: DateKey): number {
     }
   }
   return points;
+}
+
+// Settled days in the rank, plus today if it's the current rank.
+export function daysInRank(state: AppState, title: string): number {
+  const days = state.rankDays[title] ?? 0;
+  return title === getRank(state.points).current.title ? days + 1 : days;
+}
+
+export function isUnlocked(state: AppState, title: string): boolean {
+  return (
+    title === RANKS[0].title ||
+    title === getRank(state.points).current.title ||
+    (state.rankDays[title] ?? 0) > 0
+  );
 }

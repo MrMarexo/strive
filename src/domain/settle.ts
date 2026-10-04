@@ -1,5 +1,6 @@
 import { countOn, weekCountThrough, weeklyAwarded } from './counts';
 import { addDays, isSunday, mondayOf, weekDays, type DateKey } from './dates';
+import { getRank } from './ranks';
 import { TASKS } from './tasks';
 import type { AppState } from './types';
 
@@ -33,8 +34,11 @@ function weeklyPenalty(completions: Completions, sunday: DateKey): number {
 export function settle(state: AppState, today: DateKey): AppState {
   let { points, lastSettledDate, weekNumber } = state;
   const completions = { ...state.completions };
+  const rankDays = { ...state.rankDays };
 
   for (let day = addDays(lastSettledDate, 1); day < today; day = addDays(day, 1)) {
+    const held = getRank(points).current.title; // rank shown on screen during this day
+    rankDays[held] = (rankDays[held] ?? 0) + 1;
     points = Math.max(0, points + scoreDay(completions, day));
     if (isSunday(day)) {
       if (mondayOf(day) !== state.graceWeek) {
@@ -47,5 +51,5 @@ export function settle(state: AppState, today: DateKey): AppState {
   }
 
   if (lastSettledDate === state.lastSettledDate) return state;
-  return { ...state, points, lastSettledDate, completions, weekNumber };
+  return { ...state, points, lastSettledDate, completions, weekNumber, rankDays };
 }

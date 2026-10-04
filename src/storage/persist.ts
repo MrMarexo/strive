@@ -1,5 +1,6 @@
 import { DEFAULT_PLAYER_NAME, MAX_NAME_LENGTH } from '../domain/actions';
 import { addDays, fromKey, mondayOf, toKey, type DateKey } from '../domain/dates';
+import { RANKS } from '../domain/ranks';
 import { TASKS } from '../domain/tasks';
 import type { AppState } from '../domain/types';
 
@@ -7,6 +8,7 @@ export const STORAGE_KEY = 'strive:v1';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TASK_IDS = new Set<string>(TASKS.map((t) => t.id));
+const RANK_TITLES = new Set<string>(RANKS.map((r) => r.title));
 const MAX_CLOCK_DRIFT_DAYS = 7;
 
 export function freshState(today: DateKey): AppState {
@@ -18,6 +20,7 @@ export function freshState(today: DateKey): AppState {
     graceWeek: mondayOf(today),
     weekNumber: 1,
     playerName: DEFAULT_PLAYER_NAME,
+    rankDays: {},
   };
 }
 
@@ -41,6 +44,8 @@ export function isValidState(value: unknown): value is AppState {
   if (typeof value.playerName !== 'string' || value.playerName.length < 1 || value.playerName.length > MAX_NAME_LENGTH) {
     return false;
   }
+  if (!isPlainObject(value.rankDays)) return false;
+  if (!Object.entries(value.rankDays).every(([title, n]) => RANK_TITLES.has(title) && isCount(n))) return false;
   if (!isPlainObject(value.completions)) return false;
   return Object.entries(value.completions).every(
     ([date, day]) =>
@@ -50,12 +55,13 @@ export function isValidState(value: unknown): value is AppState {
   );
 }
 
-// Data saved before weekNumber/playerName existed: fill them in. The week number
+// Data saved before weekNumber/playerName/rankDays existed: fill them in. The week number
 // counts the Sundays already settled since the first week.
 function migrate(value: unknown): unknown {
   if (!isPlainObject(value) || !isDateKey(value.graceWeek) || !isDateKey(value.lastSettledDate)) return value;
   const migrated = { ...value };
   if (migrated.playerName === undefined) migrated.playerName = DEFAULT_PLAYER_NAME;
+  if (migrated.rankDays === undefined) migrated.rankDays = {};
   if (migrated.weekNumber === undefined) {
     const currentWeek = mondayOf(addDays(value.lastSettledDate, 1));
     let weekNumber = 1;

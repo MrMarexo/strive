@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { RANKS, getRank } from './ranks';
+import { RANKS, getRank, rankBySlug, rankSlug } from './ranks';
 
 describe('ranks', () => {
   it('has 15 ascending ranks from Beggar at 0 to Legend of the Realm at 550', () => {
@@ -36,5 +36,21 @@ describe('ranks', () => {
       expect(info.progress).toBe(1);
       expect(info.toNext).toBe(0);
     }
+  });
+
+  it('builds URL slugs from titles', () => {
+    expect(rankSlug('Beggar')).toBe('beggar');
+    expect(rankSlug('Man-at-Arms')).toBe('man-at-arms');
+    expect(rankSlug('Wizard of the White Order')).toBe('wizard-of-the-white-order');
+  });
+
+  it('gives every rank a unique slug that maps back to it', () => {
+    const slugs = RANKS.map((r) => rankSlug(r.title));
+    expect(new Set(slugs).size).toBe(RANKS.length);
+    for (const rank of RANKS) expect(rankBySlug(rankSlug(rank.title))).toBe(rank);
+  });
+
+  it('returns undefined for an unknown slug', () => {
+    expect(rankBySlug('emperor')).toBeUndefined();
   });
 });

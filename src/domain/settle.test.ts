@@ -6,7 +6,7 @@ import { weekDays } from './dates';
 const ALL_DAILY: DayCompletions = { reading: 1, running: 1, abstinence: 1, logic: 1, language: 1 };
 
 function state(over: Partial<AppState> = {}): AppState {
-  return { version: 1, points: 100, lastSettledDate: '2026-09-27', completions: {}, graceWeek: '2026-09-21', weekNumber: 1, playerName: 'no_name', ...over };
+  return { version: 1, points: 100, lastSettledDate: '2026-09-27', completions: {}, graceWeek: '2026-09-21', weekNumber: 1, playerName: 'no_name', rankDays: {}, ...over };
 }
 
 describe('settle', () => {
@@ -120,5 +120,16 @@ describe('settle', () => {
     expect(settle(s, '2026-10-04').weekNumber).toBe(1);
     expect(settle(s, '2026-10-05').weekNumber).toBe(2);
     expect(settle(s, '2026-10-12').weekNumber).toBe(3);
+  });
+
+  it('credits each day to the rank held during it, across a promotion and a demotion', () => {
+    const s = state({ points: 3, completions: { '2026-09-28': ALL_DAILY } });
+    // Mon: held Beggar (3), +5 -> 8 Peasant; Tue: held Peasant, -10 -> 0
+    expect(settle(s, '2026-09-30').rankDays).toEqual({ Beggar: 1, Peasant: 1 });
+  });
+
+  it('credits every day of a gap and adds to existing days', () => {
+    expect(settle(state({ points: 0 }), '2026-10-05').rankDays).toEqual({ Beggar: 7 });
+    expect(settle(state({ points: 0, rankDays: { Beggar: 4 } }), '2026-09-29').rankDays).toEqual({ Beggar: 5 });
   });
 });

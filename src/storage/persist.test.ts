@@ -12,6 +12,7 @@ const valid: AppState = {
   graceWeek: '2026-09-28',
   weekNumber: 1,
   playerName: 'Aragorn',
+  rankDays: { Beggar: 2 },
 };
 
 describe('persist', () => {
@@ -27,7 +28,7 @@ describe('persist', () => {
   it('creates a fresh state whose first scored day is today', () => {
     expect(freshState(TODAY)).toEqual({
       version: 1, points: 0, lastSettledDate: '2026-09-29', completions: {}, graceWeek: '2026-09-28',
-      weekNumber: 1, playerName: 'no_name',
+      weekNumber: 1, playerName: 'no_name', rankDays: {},
     });
   });
 
@@ -51,6 +52,10 @@ describe('persist', () => {
     ['too long player name', JSON.stringify({ ...valid, playerName: 'x'.repeat(21) })],
     ['zero week number', JSON.stringify({ ...valid, weekNumber: 0 })],
     ['string week number', JSON.stringify({ ...valid, weekNumber: '1' })],
+    ['unknown rank title', JSON.stringify({ ...valid, rankDays: { Emperor: 1 } })],
+    ['negative rank days', JSON.stringify({ ...valid, rankDays: { Beggar: -1 } })],
+    ['fractional rank days', JSON.stringify({ ...valid, rankDays: { Beggar: 0.5 } })],
+    ['array rank days', JSON.stringify({ ...valid, rankDays: [] })],
     ['impossible calendar date', JSON.stringify({ ...valid, lastSettledDate: '2026-13-45' })],
     ['missing graceWeek', JSON.stringify({ ...valid, graceWeek: undefined })],
     ['unknown task id', JSON.stringify({ ...valid, completions: { '2026-09-30': { napping: 1 } } })],
@@ -97,8 +102,8 @@ describe('persist', () => {
     expect(load(TODAY)).toEqual(drifted);
   });
   it('migrates data saved before names and week numbers existed', () => {
-    const { weekNumber: _w, playerName: _p, ...old } = { ...valid, graceWeek: '2026-09-21' };
+    const { weekNumber: _w, playerName: _p, rankDays: _r, ...old } = { ...valid, graceWeek: '2026-09-21' };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(old));
-    expect(load(TODAY)).toEqual({ ...old, weekNumber: 2, playerName: 'no_name' });
+    expect(load(TODAY)).toEqual({ ...old, weekNumber: 2, playerName: 'no_name', rankDays: {} });
   });
 });

@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { pendingToday, remainingThisWeek, todayCount, weekCount, willMiss } from './selectors';
+import { daysInRank, isUnlocked, pendingToday, remainingThisWeek, todayCount, weekCount, willMiss } from './selectors';
 import { getTask } from './tasks';
 import type { AppState } from './types';
 
 const SAT = '2026-10-03';
 
 function state(completions: AppState['completions'] = {}): AppState {
-  return { version: 1, points: 0, lastSettledDate: '2026-10-02', completions, graceWeek: '2026-09-21', weekNumber: 1, playerName: 'no_name' };
+  return { version: 1, points: 0, lastSettledDate: '2026-10-02', completions, graceWeek: '2026-09-21', weekNumber: 1, playerName: 'no_name', rankDays: {} };
 }
 
 describe('counts', () => {
@@ -60,5 +60,29 @@ describe('pendingToday', () => {
 
   it('is zero with nothing done', () => {
     expect(pendingToday(state(), SAT)).toBe(0);
+  });
+});
+
+describe('daysInRank', () => {
+  it('adds today only for the current rank', () => {
+    const s = { ...state(), points: 80, rankDays: { Beggar: 3, Knight: 2 } };
+    expect(daysInRank(s, 'Knight')).toBe(3);
+    expect(daysInRank(s, 'Beggar')).toBe(3);
+    expect(daysInRank(s, 'Ranger')).toBe(0);
+  });
+});
+
+describe('isUnlocked', () => {
+  it('unlocks Beggar, the current rank and visited ranks only', () => {
+    const s = { ...state(), points: 80, rankDays: { Squire: 2 } };
+    expect(isUnlocked(state(), 'Beggar')).toBe(true);
+    expect(isUnlocked(s, 'Knight')).toBe(true);
+    expect(isUnlocked(s, 'Squire')).toBe(true);
+    expect(isUnlocked(s, 'Ranger')).toBe(false);
+    expect(isUnlocked(s, 'Peasant')).toBe(false);
+  });
+
+  it('keeps a rank unlocked after dropping below it', () => {
+    expect(isUnlocked({ ...state(), points: 0, rankDays: { Knight: 5 } }, 'Knight')).toBe(true);
   });
 });
