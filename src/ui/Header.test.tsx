@@ -56,4 +56,9 @@ describe('Header', () => {
     expect(onRename).not.toHaveBeenCalled();
     expect(screen.getByRole('heading', { name: 'Aragorn' })).toBeInTheDocument();
   });
+
+  it('links the rank title to its rank page', () => {
+    renderHeader();
+    expect(screen.getByRole('link', { name: 'KNIGHT' })).toHaveAttribute('href', '#/ranks/knight');
+  });
 });

@@ -87,6 +87,25 @@ body {
   letter-spacing: 2px;
 }
 
+a.rank {
+  color: var(--fg);
+  text-decoration: none;
+  border-bottom: 2px dashed transparent;
+  align-self: flex-start;
+}
+
+a.rank:hover,
+a.rank:focus-visible {
+  border-bottom-color: var(--dim);
+  outline: none;
+}
+
+.identity {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
 .score {
   text-align: right;
 }
@@ -224,4 +243,56 @@ body {
 .count {
   font-size: 32px;
   min-width: 2ch;
+}
+
+.rank-page {
+  border: var(--border);
+  padding: 16px 20px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.rank-page-top {
+  align-self: stretch;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.rank-page-art {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin: 16px 0;
+}
+
+.rank-page-art .sprite {
+  width: min(200px, 50vw);
+  height: auto;
+}
+
+.sprite-locked {
+  fill: var(--dim);
+}
+
+.rank-page-title {
+  font-size: 48px;
+  font-weight: normal;
+  letter-spacing: 2px;
+}
+
+.lore {
+  max-width: 48ch;
+  color: var(--dim);
+}
+
+.rank-days {
+  font-size: 28px;
+}
+
+.current-tag {
+  animation: blink 1s steps(1) infinite;
 }

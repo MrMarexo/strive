@@ -1,4 +1,4 @@
-import { getRank } from '../domain/ranks';
+import { getRank, rankSlug } from '../domain/ranks';
 import { barCells } from './format';
 import { PlayerName } from './PlayerName';
 
@@ -19,7 +19,9 @@ export function Header({ playerName, points, pending, weekNumber, onRename }: He
       <div className="header-top">
         <div className="identity">
           <PlayerName name={playerName} onRename={onRename} />
-          <div className="rank">{current.title.toUpperCase()}</div>
+          <a className="rank" href={`#/ranks/${rankSlug(current.title)}`}>
+            {current.title.toUpperCase()}
+          </a>
         </div>
         <div className="score">
           <div className="points">{points} PTS</div>

@@ -1,9 +1,10 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
 
 describe('App', () => {
   beforeEach(() => {
+    window.location.hash = '';
     localStorage.clear();
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 8, 30, 10, 0)); // Wednesday
@@ -80,5 +81,37 @@ describe('App', () => {
     unmount();
     render(<App />);
     expect(screen.getByRole('heading', { name: 'Aragorn' })).toBeInTheDocument();
+  });
+
+  it('opens the rank page from the hash and goes back home', () => {
+    window.location.hash = '#/ranks/beggar';
+    render(<App />);
+    expect(screen.getByRole('region', { name: 'Beggar rank' })).toBeInTheDocument();
+    expect(screen.queryByRole('article', { name: 'Reading' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '[ < BACK ]' }));
+    act(() => { window.dispatchEvent(new HashChangeEvent('hashchange')); });
+    expect(window.location.hash).toBe('#/');
+    expect(screen.getByRole('article', { name: 'Reading' })).toBeInTheDocument();
+  });
+
+  it('links the header rank title to the current rank page', () => {
+    render(<App />);
+    expect(screen.getByRole('link', { name: 'BEGGAR' })).toHaveAttribute('href', '#/ranks/beggar');
+  });
+
+  it('shows the current rank for an unknown slug', () => {
+    window.location.hash = '#/ranks/emperor';
+    render(<App />);
+    expect(screen.getByRole('region', { name: 'Beggar rank' })).toBeInTheDocument();
+  });
+
+  it('keeps counting days at midnight while the rank page is open', () => {
+    vi.setSystemTime(new Date(2026, 8, 30, 23, 59, 58));
+    window.location.hash = '#/ranks/beggar';
+    render(<App />);
+    expect(screen.getByText('DAY AS BEGGAR: 1')).toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(3_000));
+    expect(screen.getByText('DAYS AS BEGGAR: 2')).toBeInTheDocument();
   });
 });
