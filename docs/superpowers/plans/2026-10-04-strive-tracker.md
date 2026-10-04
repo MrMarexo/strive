@@ -15,6 +15,7 @@
 - No backend, no network calls except the Google Fonts stylesheet for **VT323**.
 - State persisted under a single `localStorage` key: `strive:v1`.
 - Dates are local-time keys `'YYYY-MM-DD'`; week is Monday–Sunday; a day ends at local midnight.
+- First-week grace: no Sunday shortfall penalty for the week equal to `state.graceWeek` (Monday of the week the app was first opened).
 - Scoring: completion **+1**; missed daily task **−2**; weekly shortfall **−2 × (target − min(count, target))** at Sunday settlement; weekly points capped at target; points clamped to ≥ 0 after each day's net and again after the Sunday penalty.
 - Colors: background `#000`, primary `#B48CFF`, dim `#5A3F8C`. No other colors.
 - Sprites are 10×10 `string[]` maps of `#` / `.`.
@@ -542,10 +543,10 @@ git commit -m "feat: add task definitions and rank ladder"
 - Test: `src/domain/settle.test.ts`
 
 **Interfaces:**
-- Consumes: `DateKey`, `addDays`, `isSunday`, `weekDays` from `dates.ts`; `TaskId`, `TaskDef`, `TASKS` from `tasks.ts`
+- Consumes: `DateKey`, `addDays`, `isSunday`, `mondayOf`, `weekDays` from `dates.ts`; `TaskId`, `TaskDef`, `TASKS` from `tasks.ts`
 - Produces (`src/domain/types.ts`):
   - `type DayCompletions = Partial<Record<TaskId, number>>`
-  - `interface AppState { version: 1; points: number; lastSettledDate: DateKey; completions: Record<DateKey, DayCompletions> }`
+  - `interface AppState { version: 1; points: number; lastSettledDate: DateKey; completions: Record<DateKey, DayCompletions>; graceWeek: DateKey }`
 - Produces (`src/domain/counts.ts`):
   - `countOn(completions: AppState['completions'], day: DateKey, id: TaskId): number`
   - `weekCountBefore(completions, day: DateKey, id: TaskId): number` (same week, strictly before `day`)
@@ -568,6 +569,7 @@ export interface AppState {
   points: number;
   lastSettledDate: DateKey;
   completions: Record<DateKey, DayCompletions>; // current week only
+  graceWeek: DateKey; // Monday of the first week; no shortfall penalty that week
 }
 ```
 
@@ -583,7 +585,7 @@ import { weekDays } from './dates';
 const ALL_DAILY: DayCompletions = { reading: 1, running: 1, abstinence: 1, logic: 1, language: 1 };
 
 function state(over: Partial<AppState> = {}): AppState {
-  return { version: 1, points: 100, lastSettledDate: '2026-09-27', completions: {}, ...over };
+  return { version: 1, points: 100, lastSettledDate: '2026-09-27', completions: {}, graceWeek: '2026-09-21', ...over };
 }
 
 describe('settle', () => {
@@ -661,6 +663,19 @@ describe('settle', () => {
     expect(result.lastSettledDate).toBe('2026-10-11');
   });
 
+  it('skips the shortfall penalty in the grace week but still clears it', () => {
+    const s = state({ graceWeek: '2026-09-28', lastSettledDate: '2026-10-03', completions: { '2026-10-04': ALL_DAILY } });
+    const result = settle(s, '2026-10-05');
+    expect(result.points).toBe(105);
+    expect(result.completions).toEqual({});
+  });
+
+  it('applies the shortfall penalty in the week after the grace week', () => {
+    const s = state({ graceWeek: '2026-09-28', points: 100, lastSettledDate: '2026-10-10', completions: { '2026-10-11': ALL_DAILY } });
+    // Sun 2026-10-11: +5, then -26
+    expect(settle(s, '2026-10-12').points).toBe(79);
+  });
+
   it('keeps completions from the new week when settling Sunday', () => {
     const s = state({ lastSettledDate: '2026-10-03', completions: { '2026-10-05': { reading: 1 } } });
     expect(settle(s, '2026-10-05').completions).toEqual({ '2026-10-05': { reading: 1 } });
@@ -720,7 +735,7 @@ export function weeklyAwarded(completions: Completions, day: DateKey, task: Task
 
 ```ts
 import { countOn, weekCountThrough, weeklyAwarded } from './counts';
-import { addDays, isSunday, weekDays, type DateKey } from './dates';
+import { addDays, isSunday, mondayOf, weekDays, type DateKey } from './dates';
 import { TASKS } from './tasks';
 import type { AppState } from './types';
 
@@ -758,7 +773,9 @@ export function settle(state: AppState, today: DateKey): AppState {
   for (let day = addDays(lastSettledDate, 1); day < today; day = addDays(day, 1)) {
     points = Math.max(0, points + scoreDay(completions, day));
     if (isSunday(day)) {
-      points = Math.max(0, points - weeklyPenalty(completions, day));
+      if (mondayOf(day) !== state.graceWeek) {
+        points = Math.max(0, points - weeklyPenalty(completions, day));
+      }
       for (const d of weekDays(day)) delete completions[d];
     }
     lastSettledDate = day;
@@ -772,7 +789,7 @@ export function settle(state: AppState, today: DateKey): AppState {
 - [ ] **Step 6: Run tests to verify they pass**
 
 Run: `npx vitest run src/domain/settle.test.ts`
-Expected: PASS (13 tests).
+Expected: PASS (15 tests).
 
 - [ ] **Step 7: Commit**
 
@@ -812,7 +829,7 @@ import type { AppState } from './types';
 const TODAY = '2026-09-30';
 
 function state(completions: AppState['completions'] = {}): AppState {
-  return { version: 1, points: 10, lastSettledDate: '2026-09-29', completions };
+  return { version: 1, points: 10, lastSettledDate: '2026-09-29', completions, graceWeek: '2026-09-21' };
 }
 
 describe('complete', () => {
@@ -863,7 +880,7 @@ import type { AppState } from './types';
 const SAT = '2026-10-03';
 
 function state(completions: AppState['completions'] = {}): AppState {
-  return { version: 1, points: 0, lastSettledDate: '2026-10-02', completions };
+  return { version: 1, points: 0, lastSettledDate: '2026-10-02', completions, graceWeek: '2026-09-21' };
 }
 
 describe('counts', () => {
@@ -1024,7 +1041,7 @@ git commit -m "feat: add complete/undo actions and display selectors"
 - Test: `src/storage/persist.test.ts`
 
 **Interfaces:**
-- Consumes: `AppState` (`domain/types.ts`); `TASKS` (`domain/tasks.ts`); `addDays`, `DateKey` (`domain/dates.ts`)
+- Consumes: `AppState` (`domain/types.ts`); `TASKS` (`domain/tasks.ts`); `addDays`, `mondayOf`, `DateKey` (`domain/dates.ts`)
 - Produces (`src/storage/persist.ts`):
   - `const STORAGE_KEY = 'strive:v1'`
   - `freshState(today: DateKey): AppState`
@@ -1047,6 +1064,7 @@ const valid: AppState = {
   points: 42,
   lastSettledDate: '2026-09-29',
   completions: { '2026-09-30': { reading: 1, chores: 3 } },
+  graceWeek: '2026-09-28',
 };
 
 describe('persist', () => {
@@ -1060,7 +1078,9 @@ describe('persist', () => {
   afterEach(() => warn.mockRestore());
 
   it('creates a fresh state whose first scored day is today', () => {
-    expect(freshState(TODAY)).toEqual({ version: 1, points: 0, lastSettledDate: '2026-09-29', completions: {} });
+    expect(freshState(TODAY)).toEqual({
+      version: 1, points: 0, lastSettledDate: '2026-09-29', completions: {}, graceWeek: '2026-09-28',
+    });
   });
 
   it('returns a fresh state when nothing is stored', () => {
@@ -1079,6 +1099,7 @@ describe('persist', () => {
     ['negative points', JSON.stringify({ ...valid, points: -3 })],
     ['string points', JSON.stringify({ ...valid, points: '42' })],
     ['bad date key', JSON.stringify({ ...valid, lastSettledDate: 'yesterday' })],
+    ['missing graceWeek', JSON.stringify({ ...valid, graceWeek: undefined })],
     ['unknown task id', JSON.stringify({ ...valid, completions: { '2026-09-30': { napping: 1 } } })],
     ['fractional count', JSON.stringify({ ...valid, completions: { '2026-09-30': { reading: 0.5 } } })],
     ['array completions', JSON.stringify({ ...valid, completions: [] })],
@@ -1109,7 +1130,7 @@ Expected: FAIL — cannot resolve `./persist`.
 - [ ] **Step 3: Implement `src/storage/persist.ts`**
 
 ```ts
-import { addDays, type DateKey } from '../domain/dates';
+import { addDays, mondayOf, type DateKey } from '../domain/dates';
 import { TASKS } from '../domain/tasks';
 import type { AppState } from '../domain/types';
 
@@ -1119,11 +1140,15 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TASK_IDS = new Set<string>(TASKS.map((t) => t.id));
 
 export function freshState(today: DateKey): AppState {
-  return { version: 1, points: 0, lastSettledDate: addDays(today, -1), completions: {} };
+  return { version: 1, points: 0, lastSettledDate: addDays(today, -1), completions: {}, graceWeek: mondayOf(today) };
 }
 
 function isCount(value: unknown): boolean {
   return typeof value === 'number' && Number.isInteger(value) && value >= 0;
+}
+
+function isDateKey(value: unknown): value is string {
+  return typeof value === 'string' && DATE_RE.test(value);
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -1133,7 +1158,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 export function isValidState(value: unknown): value is AppState {
   if (!isPlainObject(value)) return false;
   if (value.version !== 1 || !isCount(value.points)) return false;
-  if (typeof value.lastSettledDate !== 'string' || !DATE_RE.test(value.lastSettledDate)) return false;
+  if (!isDateKey(value.lastSettledDate) || !isDateKey(value.graceWeek)) return false;
   if (!isPlainObject(value.completions)) return false;
   return Object.entries(value.completions).every(
     ([date, day]) =>
@@ -1234,7 +1259,7 @@ describe('useAppState', () => {
   });
 
   it('settles days missed while the app was closed', () => {
-    seed({ version: 1, points: 50, lastSettledDate: '2026-09-28', completions: { '2026-09-29': { reading: 1 } } });
+    seed({ version: 1, points: 50, graceWeek: '2026-09-21', lastSettledDate: '2026-09-28', completions: { '2026-09-29': { reading: 1 } } });
     vi.setSystemTime(new Date(2026, 8, 30, 10, 0));
     const { result } = renderHook(() => useAppState());
     // Tue: +1 reading, -8 for four missed daily tasks
@@ -1243,7 +1268,7 @@ describe('useAppState', () => {
   });
 
   it('settles at midnight while the app stays open', () => {
-    seed({ version: 1, points: 50, lastSettledDate: '2026-09-28', completions: {} });
+    seed({ version: 1, points: 50, graceWeek: '2026-09-21', lastSettledDate: '2026-09-28', completions: {} });
     vi.setSystemTime(new Date(2026, 8, 29, 23, 59, 30));
     const { result } = renderHook(() => useAppState());
     act(() => result.current.complete('reading'));
@@ -1254,7 +1279,7 @@ describe('useAppState', () => {
   });
 
   it('counts a tap after midnight for the new day even before the timer fires', () => {
-    seed({ version: 1, points: 50, lastSettledDate: '2026-09-28', completions: {} });
+    seed({ version: 1, points: 50, graceWeek: '2026-09-21', lastSettledDate: '2026-09-28', completions: {} });
     vi.setSystemTime(new Date(2026, 8, 29, 23, 59, 50));
     const { result } = renderHook(() => useAppState());
 
@@ -1266,7 +1291,7 @@ describe('useAppState', () => {
   });
 
   it('settles when the window regains focus', () => {
-    seed({ version: 1, points: 50, lastSettledDate: '2026-09-28', completions: {} });
+    seed({ version: 1, points: 50, graceWeek: '2026-09-21', lastSettledDate: '2026-09-28', completions: {} });
     vi.setSystemTime(new Date(2026, 8, 29, 23, 59, 50));
     const { result } = renderHook(() => useAppState());
 

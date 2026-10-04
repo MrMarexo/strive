@@ -48,6 +48,7 @@ interface TaskDef {
 - **Floor:** points never go below 0. Clamping is applied after each day's net change, and again after the Sunday weekly penalty (not after each individual task).
   - Example: 1 point, a day nets +3 −4 = −1 → 0.
 - Anything not marked done by end of day counts as failed. There is no "skip" or "rest day".
+- **First-week grace:** no weekly shortfall penalty is applied for the week (Mon–Sun) in which the app was first opened. Daily scoring and weekly +1s apply normally that week.
 
 ## 5. Ranks
 
@@ -86,10 +87,11 @@ interface AppState {
   lastSettledDate: string; // 'YYYY-MM-DD' (local), last day already scored
   completions: Record<string, Partial<Record<TaskId, number>>>;
                            // dateKey -> taskId -> count; current week only
+  graceWeek: string;       // Monday of the week the app was first opened
 }
 ```
 
-- **First launch / missing / invalid data:** fresh state — `points: 0`, `lastSettledDate: yesterday`, `completions: {}`. Invalid data logs a console warning.
+- **First launch / missing / invalid data:** fresh state — `points: 0`, `lastSettledDate: yesterday`, `completions: {}`, `graceWeek: mondayOf(today)`. Invalid data logs a console warning.
 - **Save failure** (quota, private mode): caught and logged; app continues in memory.
 
 ## 7. Settlement
@@ -99,7 +101,7 @@ interface AppState {
 1. Daily tasks: count ≥ 1 → +1, else −2.
 2. Weekly tasks: +1 per completion on `d`, only while the week's running total (Monday through `d`) is within the target.
 3. `points = max(0, points + dayNet)`.
-4. If `d` is a Sunday: for each weekly task, `points = max(0, points − 2 × shortfall)` (penalties summed, single clamp), then delete all completions with date keys in that Monday–Sunday week.
+4. If `d` is a Sunday: unless `mondayOf(d) === graceWeek`, for each weekly task, `points = max(0, points − 2 × shortfall)` (penalties summed, single clamp), then delete all completions with date keys in that Monday–Sunday week.
 5. `lastSettledDate = d`.
 
 Properties:
@@ -183,7 +185,7 @@ Domain modules have no React or storage dependencies. `useAppState` is the only 
 
 ## 12. Testing (Vitest + React Testing Library)
 
-- **settle:** perfect day; all daily missed; weekly cap (6 chores → +4); Sunday shortfall (1 of 4 sport → +1, −6); clamp with daily netting; multi-day and multi-week gaps; first launch; idempotency; week completions cleared after Sunday.
+- **settle:** perfect day; all daily missed; weekly cap (6 chores → +4); Sunday shortfall (1 of 4 sport → +1, −6); clamp with daily netting; multi-day and multi-week gaps; first launch; first-week grace; idempotency; week completions cleared after Sunday.
 - **actions:** maxPerDay enforcement; chores accumulate; undo floor at 0.
 - **ranks:** threshold boundaries, progress fraction, top rank.
 - **selectors:** remaining, target met, at-risk on Saturday with 3 left, pendingToday with cap.
