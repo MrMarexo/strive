@@ -168,6 +168,11 @@ body {
   fill: var(--fg);
 }
 
+.check {
+  fill: currentColor;
+  vertical-align: -1px;
+}
+
 .sub {
   min-height: 1.2em;
 }

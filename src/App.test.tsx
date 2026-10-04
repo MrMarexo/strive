@@ -23,10 +23,13 @@ describe('App', () => {
     render(<App />);
     const card = screen.getByRole('article', { name: 'Reading' });
     fireEvent.click(within(card).getByRole('button', { name: '[ MARK DONE ]' }));
-    expect(within(card).getByRole('button', { name: '[ DONE ✓ ]' })).toHaveAttribute('aria-pressed', 'true');
+    expect(within(card).getByRole('button', { name: '[ DONE ]' })).toHaveAttribute('aria-pressed', 'true');
+    const done = within(card).getByRole('button', { name: '[ DONE ]' });
+    expect(done).not.toHaveTextContent('✓');
+    expect(done.querySelector('svg.check rect')).not.toBeNull();
     expect(screen.getByText('+1 PENDING')).toBeInTheDocument();
 
-    fireEvent.click(within(card).getByRole('button', { name: '[ DONE ✓ ]' }));
+    fireEvent.click(within(card).getByRole('button', { name: '[ DONE ]' }));
     expect(within(card).getByRole('button', { name: '[ MARK DONE ]' })).toBeInTheDocument();
     expect(screen.getByText('+0 PENDING')).toBeInTheDocument();
   });
@@ -62,7 +65,7 @@ describe('App', () => {
     expect(within(coding).getByText(/WILL MISS 5/)).toBeInTheDocument();
     fireEvent.click(within(coding).getByRole('button', { name: '[ MARK DONE ]' }));
     expect(within(coding).getByText(/WILL MISS 4/)).toBeInTheDocument();
-    fireEvent.click(within(coding).getByRole('button', { name: '[ DONE ✓ ]' }));
+    fireEvent.click(within(coding).getByRole('button', { name: '[ DONE ]' }));
     expect(within(coding).getByText(/WILL MISS 5/)).toBeInTheDocument();
   });
 

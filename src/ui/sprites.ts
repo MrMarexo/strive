@@ -98,3 +98,11 @@ export const SPRITES: Record<TaskId, string[]> = {
     '.#........',
   ],
 };
+
+export const CHECK: string[] = [
+  '......#',
+  '.....#.',
+  '#...#..',
+  '.#.#...',
+  '..#....',
+];

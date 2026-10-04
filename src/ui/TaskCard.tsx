@@ -1,7 +1,7 @@
 import type { TaskDef } from '../domain/tasks';
 import { cadenceLabel } from './format';
 import { PixelSprite } from './PixelSprite';
-import { SPRITES } from './sprites';
+import { CHECK, SPRITES } from './sprites';
 
 export interface CardProps {
   task: TaskDef;
@@ -28,7 +28,13 @@ export function TaskCard({ task, todayCount, remaining, willMiss, onComplete, on
         aria-pressed={done}
         onClick={done ? onUndo : onComplete}
       >
-        {done ? '[ DONE ✓ ]' : '[ MARK DONE ]'}
+        {done ? (
+          <>
+            [ DONE <PixelSprite map={CHECK} size={21} className="check" /> ]
+          </>
+        ) : (
+          '[ MARK DONE ]'
+        )}
       </button>
     </article>
   );
