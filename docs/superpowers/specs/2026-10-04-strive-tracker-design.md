@@ -88,10 +88,13 @@ interface AppState {
   completions: Record<string, Partial<Record<TaskId, number>>>;
                            // dateKey -> taskId -> count; current week only
   graceWeek: string;       // Monday of the week the app was first opened
+  weekNumber: number;      // 1 in the first week, +1 per settled Sunday
+  playerName: string;      // 1–20 chars, default 'no_name'
 }
 ```
 
-- **First launch / missing / invalid data:** fresh state — `points: 0`, `lastSettledDate: yesterday`, `completions: {}`, `graceWeek: mondayOf(today)`. Invalid data logs a console warning.
+- **First launch / missing / invalid data:** fresh state — `points: 0`, `lastSettledDate: yesterday`, `completions: {}`, `graceWeek: mondayOf(today)`, `weekNumber: 1`, `playerName: 'no_name'`. Invalid data logs a console warning.
+- **Migration:** data without `playerName`/`weekNumber` gets `'no_name'` and a week number computed from the Sundays settled since `graceWeek`.
 - **Save failure** (quota, private mode, storage access blocked): caught and logged; app continues in memory.
 - **Future `lastSettledDate`** more than 7 days after today (clock jump, hand edit): reset to yesterday, keeping points and only the current week's completions up to today. Impossible calendar dates (e.g. `2026-13-45`) are invalid.
 - **Multiple tabs:** a tab adopts the state another tab saves (`storage` event), so a stale tab never overwrites newer progress.
@@ -103,7 +106,7 @@ interface AppState {
 1. Daily tasks: count ≥ 1 → +1, else −2.
 2. Weekly tasks: +1 per completion on `d`, only while the week's running total (Monday through `d`) is within the target.
 3. `points = max(0, points + dayNet)`.
-4. If `d` is a Sunday: unless `mondayOf(d) === graceWeek`, for each weekly task, `points = max(0, points − 2 × shortfall)` (penalties summed, single clamp), then delete all completions with date keys in that Monday–Sunday week.
+4. If `d` is a Sunday: unless `mondayOf(d) === graceWeek`, for each weekly task, `points = max(0, points − 2 × shortfall)` (penalties summed, single clamp), then delete all completions with date keys in that Monday–Sunday week. Increment `weekNumber` (grace week included).
 5. `lastSettledDate = d`.
 
 Properties:
@@ -124,10 +127,7 @@ Pure functions, applied to **today only**. Both are no-ops when `today <= lastSe
 
 - `weekCount(state, taskId, todayKey)`: completions Monday→today for the current week.
 - `remainingThisWeek(...)`: `max(0, target − weekCount)`.
-- `availableDays` (weekly tasks with `maxPerDay === 1` only) = days left in the week after today, plus 1 if the task is not yet done today.
-- `isAtRisk(...)`: `remaining > 0 && remaining === availableDays` — every remaining day is needed. E.g. Saturday, 2 left, not done today → at risk.
-- `willMiss(...)`: `max(0, remaining − availableDays)` — sessions that can no longer fit. E.g. Saturday, 3 left, not done today → 1.
-- Tasks with unlimited `maxPerDay` (chores) and daily tasks are never at risk and never "will miss".
+- `willMiss(...)` (weekly tasks with `maxPerDay === 1` only): `max(0, remaining − daysLeftAfter(today))` — sessions that won't fit if nothing more is done today; today's session counts as missed until marked done. E.g. Sunday, Coding 5 left → 5; mark done → 4. Saturday, 2 left, not done → 1. Chores and daily tasks → 0.
 - `pendingToday(state, todayKey)`: points today's completions would earn if settled now (daily +1 each; weekly +1 each within the cap). Display only; excludes penalties.
 
 ## 10. UI
@@ -139,17 +139,18 @@ Single screen, retro old-school video game / terminal aesthetic.
 - Font: **VT323** (Google Fonts) throughout; rank title rendered large.
 - Square corners, 2px solid purple borders.
 - Buttons styled `[ MARK DONE ]`; when done, inverted (purple fill, black text) `[ DONE ✓ ]`.
-- Blinking `▮` cursor after the rank title.
+- Blinking `▮` cursor after the player name.
 
 **Header**
-- Rank title, settled points (`112 PTS`).
+- Left: player name (large, click to edit inline — Enter/blur saves, Escape cancels, trimmed, empty → `no_name`, max 20 chars) with the rank title (smaller) below.
+- Right: settled points (`112 PTS`) with today's pending points (`+4 PENDING`, large, primary color) below.
 - Text progress bar of 20 cells using `▓` (filled) and `░` (empty) proportional to `progress`, followed by `N TO <NEXT RANK>` (or `MAX RANK` at the top).
-- `TODAY: +N PENDING · WEEK OF <Mon date>`.
+- `WEEK N` (the app-week number).
 
 **Task grid** — responsive: 1 column (phone), 2 (tablet), 4 (desktop).
 
 **TaskCard** (maxPerDay = 1)
-- 10×10 pixel sprite, task name, subtitle: `DAILY` or `N LEFT THIS WEEK` / `TARGET MET`, plus `WILL MISS N` or `AT RISK` label when applicable.
+- 10×10 pixel sprite, task name, subtitle: `DAILY` or `N LEFT THIS WEEK` / `TARGET MET`, plus a `WILL MISS N` label when applicable.
 - Toggle button: `[ MARK DONE ]` ↔ `[ DONE ✓ ]` (tapping done undoes, today only).
 
 **CounterCard** (chores)
@@ -169,7 +170,7 @@ src/
     dates.ts        # toKey, addDays, mondayOf, isSunday, daysLeftInWeek
     settle.ts       # settle()
     actions.ts      # complete(), undo()
-    selectors.ts    # weekCount, remainingThisWeek, isAtRisk, pendingToday
+    selectors.ts    # weekCount, remainingThisWeek, willMiss, pendingToday
   storage/
     persist.ts      # load(), save(), freshState()
   state/
