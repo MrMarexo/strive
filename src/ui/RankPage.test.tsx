@@ -50,7 +50,7 @@ describe('RankPage', () => {
     const { onNavigate, unmount } = renderPage('Beggar');
     expect(screen.getByRole('button', { name: 'Previous rank' })).toBeDisabled();
     fireEvent.click(screen.getByRole('button', { name: 'Next rank' }));
-    expect(onNavigate).toHaveBeenCalledWith('#/ranks/peasant');
+    expect(onNavigate).toHaveBeenCalledWith('#/ranks/peasant', { replace: true });
     unmount();
 
     renderPage('Legend of the Realm', { points: 600 });
@@ -60,9 +60,9 @@ describe('RankPage', () => {
   it('supports arrow keys and Escape, and Back goes home', () => {
     const { onNavigate } = renderPage('Peasant', { points: 5 });
     fireEvent.keyDown(window, { key: 'ArrowLeft' });
-    expect(onNavigate).toHaveBeenLastCalledWith('#/ranks/beggar');
+    expect(onNavigate).toHaveBeenLastCalledWith('#/ranks/beggar', { replace: true });
     fireEvent.keyDown(window, { key: 'ArrowRight' });
-    expect(onNavigate).toHaveBeenLastCalledWith('#/ranks/stable-hand');
+    expect(onNavigate).toHaveBeenLastCalledWith('#/ranks/stable-hand', { replace: true });
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(onNavigate).toHaveBeenLastCalledWith('#/');
     fireEvent.click(screen.getByRole('button', { name: '[ < BACK ]' }));

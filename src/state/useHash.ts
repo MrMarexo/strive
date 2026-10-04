@@ -17,6 +17,9 @@ export function useHash(): string {
   return hash;
 }
 
-export function navigate(hash: string): void {
-  window.location.hash = hash;
+// replace swaps the current history entry, so stepping through ranks doesn't
+// make the browser's Back button walk through every rank viewed.
+export function navigate(hash: string, { replace = false }: { replace?: boolean } = {}): void {
+  if (replace) window.location.replace(hash);
+  else window.location.hash = hash;
 }

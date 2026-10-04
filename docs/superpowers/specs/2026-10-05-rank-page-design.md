@@ -24,7 +24,7 @@ Clicking the rank title in the header opens a "bestiary" page for ranks: a large
 - An unknown slug under `#/ranks/` shows the player's current rank.
 - A `useHash()` hook returns the current hash and re-renders on `hashchange`. No router library.
 - The header's rank title is a link to `#/ranks/<current rank slug>`.
-- The browser back button returns home, because navigation is ordinary hash history.
+- The browser back button returns home: opening the page adds one history entry, while `[<]`/`[>]` and the arrow keys replace it (`location.replace`) instead of adding more.
 
 ## 4. Data
 
@@ -36,7 +36,7 @@ rankDays: Record<string, number>; // rank title -> settled days spent in that ra
 
 - **Crediting:** in `settle()`, for each settled day `d`, before applying `d`'s points, add 1 to `rankDays[getRank(points).current.title]`, using the points as they were at the start of `d`. That is the rank shown on screen during `d`. Because points change only at settlement, each day belongs to exactly one rank.
 - **Displayed days:** `daysInRank(state, title)` = `rankDays[title] ?? 0`, plus 1 if `title` is the current rank (today counts live).
-- **Unlocked:** `isUnlocked(state, title)` is true if `rankDays[title] > 0`, or `title` is the current rank, or `title` is `Beggar`. A rank you reached stays unlocked after you drop below it.
+- **Unlocked:** `isUnlocked(state, title)` is true for every rank at or below the highest rank ever reached. The highest reached is the current rank, or a higher rank with `rankDays > 0`. This also unlocks ranks skipped by a big day (e.g. 4 → 15 pts skips Peasant), and ranks stay unlocked after you drop below them.
 - **Fresh state:** `rankDays: {}`.
 - **Migration:** data without `rankDays` gets `{}`, so counting starts from the first load after this change.
 - **Validation:** `rankDays` must be a plain object whose keys are rank titles from `RANKS` and whose values are integers ≥ 0. Anything else counts as invalid data (fresh state plus a warning, as before).
@@ -136,7 +136,7 @@ src/
 ## 9. Testing
 
 - **settle:** a day is credited to the rank held at the start of that day; promotion (Beggar → Peasant) credits the promotion day to Beggar; demotion credits the next day to the lower rank; gaps credit every day; idempotent.
-- **selectors:** `daysInRank` adds today only for the current rank; `isUnlocked` covers Beggar, current, visited and never-reached ranks, plus staying unlocked after a demotion.
+- **selectors:** `daysInRank` adds today only for the current rank; `isUnlocked` covers Beggar, current, skipped and never-reached ranks, plus staying unlocked after a demotion.
 - **ranks:** slugs are unique and `rankBySlug(rankSlug(t))` returns the rank; unknown slug → `undefined`.
 - **persist:** fresh state has `rankDays: {}`; migration adds it; invalid `rankDays` (unknown title, negative or fractional value, array) → fresh state.
 - **rankContent:** every rank has a sprite and lore; all 16 sprites are 20×20 maps of `#`/`.`.

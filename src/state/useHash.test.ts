@@ -26,4 +26,12 @@ describe('useHash', () => {
     });
     expect(result.current).toBe('#/ranks/king');
   });
+
+  it('can replace the current history entry instead of adding one', () => {
+    navigate('#/ranks/king');
+    const length = window.history.length;
+    navigate('#/ranks/lord', { replace: true });
+    expect(window.location.hash).toBe('#/ranks/lord');
+    expect(window.history.length).toBe(length);
+  });
 });

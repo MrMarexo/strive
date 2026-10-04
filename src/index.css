@@ -270,8 +270,16 @@ a.rank:focus-visible {
 }
 
 .rank-page-art .sprite {
-  width: min(200px, 50vw);
+  flex: 0 1 200px;
+  min-width: 0;
+  width: 200px;
   height: auto;
+}
+
+@media (max-width: 600px) {
+  .rank-page-art {
+    gap: 8px;
+  }
 }
 
 .sprite-locked {

@@ -8,11 +8,12 @@ import { LOCKED_SPRITE, RANK_LORE, RANK_SPRITES } from './rankContent';
 interface RankPageProps {
   state: AppState;
   rank: Rank;
-  onNavigate: (hash: string) => void;
+  onNavigate: (hash: string, options?: { replace?: boolean }) => void;
 }
 
 const HOME = '#/';
 const rankHash = (rank: Rank) => `#/ranks/${rankSlug(rank.title)}`;
+const STEP = { replace: true };
 
 export function RankPage({ state, rank, onNavigate }: RankPageProps) {
   const index = RANKS.indexOf(rank);
@@ -25,8 +26,8 @@ export function RankPage({ state, rank, onNavigate }: RankPageProps) {
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'ArrowLeft' && prev) onNavigate(rankHash(prev));
-      if (event.key === 'ArrowRight' && next) onNavigate(rankHash(next));
+      if (event.key === 'ArrowLeft' && prev) onNavigate(rankHash(prev), STEP);
+      if (event.key === 'ArrowRight' && next) onNavigate(rankHash(next), STEP);
       if (event.key === 'Escape') onNavigate(HOME);
     };
     window.addEventListener('keydown', onKey);
@@ -49,7 +50,7 @@ export function RankPage({ state, rank, onNavigate }: RankPageProps) {
           className="btn"
           aria-label="Previous rank"
           disabled={!prev}
-          onClick={() => prev && onNavigate(rankHash(prev))}
+          onClick={() => prev && onNavigate(rankHash(prev), STEP)}
         >
           [&lt;]
         </button>
@@ -64,7 +65,7 @@ export function RankPage({ state, rank, onNavigate }: RankPageProps) {
           className="btn"
           aria-label="Next rank"
           disabled={!next}
-          onClick={() => next && onNavigate(rankHash(next))}
+          onClick={() => next && onNavigate(rankHash(next), STEP)}
         >
           [&gt;]
         </button>

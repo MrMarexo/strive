@@ -73,16 +73,23 @@ describe('daysInRank', () => {
 });
 
 describe('isUnlocked', () => {
-  it('unlocks Beggar, the current rank and visited ranks only', () => {
+  it('unlocks every rank up to the current one, and none above it', () => {
     const s = { ...state(), points: 80, rankDays: { Squire: 2 } };
     expect(isUnlocked(state(), 'Beggar')).toBe(true);
     expect(isUnlocked(s, 'Knight')).toBe(true);
     expect(isUnlocked(s, 'Squire')).toBe(true);
     expect(isUnlocked(s, 'Ranger')).toBe(false);
-    expect(isUnlocked(s, 'Peasant')).toBe(false);
+    expect(isUnlocked(s, 'Peasant')).toBe(true);
   });
 
   it('keeps a rank unlocked after dropping below it', () => {
     expect(isUnlocked({ ...state(), points: 0, rankDays: { Knight: 5 } }, 'Knight')).toBe(true);
+  });
+
+  it('unlocks ranks skipped on the way up, even after dropping back down', () => {
+    expect(isUnlocked({ ...state(), points: 15, rankDays: { Beggar: 3 } }, 'Peasant')).toBe(true);
+    const dropped = { ...state(), points: 0, rankDays: { Beggar: 3, Knight: 2 } };
+    expect(isUnlocked(dropped, 'Peasant')).toBe(true);
+    expect(isUnlocked(dropped, 'Ranger')).toBe(false);
   });
 });

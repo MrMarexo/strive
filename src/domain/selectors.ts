@@ -44,10 +44,17 @@ export function daysInRank(state: AppState, title: string): number {
   return title === getRank(state.points).current.title ? days + 1 : days;
 }
 
+// The highest rank ever held: the current one, or a higher one with recorded days.
+function highestReachedIndex(state: AppState): number {
+  let highest = RANKS.indexOf(getRank(state.points).current);
+  RANKS.forEach((rank, i) => {
+    if (i > highest && (state.rankDays[rank.title] ?? 0) > 0) highest = i;
+  });
+  return highest;
+}
+
+// Every rank up to the highest reached is unlocked, including ranks skipped by a big day.
 export function isUnlocked(state: AppState, title: string): boolean {
-  return (
-    title === RANKS[0].title ||
-    title === getRank(state.points).current.title ||
-    (state.rankDays[title] ?? 0) > 0
-  );
+  const index = RANKS.findIndex((rank) => rank.title === title);
+  return index !== -1 && index <= highestReachedIndex(state);
 }
