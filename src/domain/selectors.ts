@@ -17,25 +17,12 @@ export function remainingThisWeek(state: AppState, task: TaskDef, today: DateKey
   return Math.max(0, task.cadence.target - weekCount(state, task.id, today));
 }
 
-// Days still usable for a once-per-day weekly task; null if the task isn't one.
-function slack(state: AppState, task: TaskDef, today: DateKey): { remaining: number; available: number } | null {
-  if (task.maxPerDay !== 1) return null;
-  const remaining = remainingThisWeek(state, task, today);
-  if (remaining === null) return null;
-  const available = daysLeftAfter(today) + (todayCount(state, task.id, today) === 0 ? 1 : 0);
-  return { remaining, available };
-}
-
-// Every remaining day is needed to hit the target.
-export function isAtRisk(state: AppState, task: TaskDef, today: DateKey): boolean {
-  const s = slack(state, task, today);
-  return s !== null && s.remaining > 0 && s.remaining === s.available;
-}
-
-// Sessions that can no longer fit before Sunday ends.
+// Sessions that won't fit if nothing more is done today: today's session counts
+// as missed until it's marked done. Only for once-per-day weekly tasks.
 export function willMiss(state: AppState, task: TaskDef, today: DateKey): number {
-  const s = slack(state, task, today);
-  return s === null ? 0 : Math.max(0, s.remaining - s.available);
+  if (task.maxPerDay !== 1) return 0;
+  const remaining = remainingThisWeek(state, task, today);
+  return remaining === null ? 0 : Math.max(0, remaining - daysLeftAfter(today));
 }
 
 export function pendingToday(state: AppState, today: DateKey): number {

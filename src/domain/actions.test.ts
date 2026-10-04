@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { complete, undo } from './actions';
+import { complete, rename, undo } from './actions';
 import type { AppState } from './types';
 
 const TODAY = '2026-09-30';
 
 function state(completions: AppState['completions'] = {}): AppState {
-  return { version: 1, points: 10, lastSettledDate: '2026-09-29', completions, graceWeek: '2026-09-21' };
+  return { version: 1, points: 10, lastSettledDate: '2026-09-29', completions, graceWeek: '2026-09-21', weekNumber: 1, playerName: 'no_name' };
 }
 
 describe('complete', () => {
@@ -50,5 +50,19 @@ describe('settled days', () => {
     const s = state({ '2026-09-29': { chores: 1 } });
     expect(complete(s, 'reading', '2026-09-29')).toBe(s);
     expect(undo(s, 'chores', '2026-09-29')).toBe(s);
+  });
+});
+
+describe('rename', () => {
+  it('sets a trimmed player name', () => {
+    expect(rename(state(), '  Aragorn ').playerName).toBe('Aragorn');
+  });
+
+  it('falls back to no_name when empty', () => {
+    expect(rename({ ...state(), playerName: 'Aragorn' }, '   ').playerName).toBe('no_name');
+  });
+
+  it('caps the name at 20 characters', () => {
+    expect(rename(state(), 'Gandalf the Grey Wanderer').playerName).toBe('Gandalf the Grey Wan');
   });
 });

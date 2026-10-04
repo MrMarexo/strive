@@ -6,7 +6,7 @@ import { weekDays } from './dates';
 const ALL_DAILY: DayCompletions = { reading: 1, running: 1, abstinence: 1, logic: 1, language: 1 };
 
 function state(over: Partial<AppState> = {}): AppState {
-  return { version: 1, points: 100, lastSettledDate: '2026-09-27', completions: {}, graceWeek: '2026-09-21', ...over };
+  return { version: 1, points: 100, lastSettledDate: '2026-09-27', completions: {}, graceWeek: '2026-09-21', weekNumber: 1, playerName: 'no_name', ...over };
 }
 
 describe('settle', () => {
@@ -113,5 +113,12 @@ describe('settle', () => {
     const copy = structuredClone(s);
     settle(s, '2026-10-05');
     expect(s).toEqual(copy);
+  });
+
+  it('advances the week number on each settled Sunday, grace week included', () => {
+    const s = state({ graceWeek: '2026-09-28', weekNumber: 1, points: 1000 });
+    expect(settle(s, '2026-10-04').weekNumber).toBe(1);
+    expect(settle(s, '2026-10-05').weekNumber).toBe(2);
+    expect(settle(s, '2026-10-12').weekNumber).toBe(3);
   });
 });

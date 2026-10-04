@@ -42,15 +42,57 @@ body {
 .header-top {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: flex-start;
   flex-wrap: wrap;
   gap: 16px;
 }
 
-.rank {
+.player {
   font-size: 48px;
   font-weight: normal;
   letter-spacing: 2px;
+  line-height: 1;
+}
+
+.player-name,
+.player-input {
+  font: inherit;
+  letter-spacing: inherit;
+  color: var(--fg);
+  background: none;
+  border: none;
+  border-bottom: 2px dashed transparent;
+  padding: 0;
+}
+
+.player-name {
+  cursor: pointer;
+}
+
+.player-name:hover,
+.player-name:focus-visible {
+  border-bottom-color: var(--dim);
+  outline: none;
+}
+
+.player-input {
+  width: 20ch;
+  max-width: 100%;
+  border-bottom-color: var(--fg);
+  outline: none;
+}
+
+.rank {
+  font-size: 28px;
+  letter-spacing: 2px;
+}
+
+.score {
+  text-align: right;
+}
+
+.pending {
+  font-size: 30px;
 }
 
 .cursor,
@@ -69,7 +111,8 @@ body {
 }
 
 .points {
-  font-size: 32px;
+  font-size: 40px;
+  line-height: 1;
 }
 
 .bar {

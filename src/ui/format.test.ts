@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { barCells, cadenceLabel, formatWeekOf } from './format';
+import { barCells, cadenceLabel } from './format';
 
 describe('barCells', () => {
   it('fills proportionally, rounding down', () => {
@@ -12,13 +12,6 @@ describe('barCells', () => {
   it('clamps out-of-range progress', () => {
     expect(barCells(-1)).toEqual({ filled: 0, empty: 20 });
     expect(barCells(2)).toEqual({ filled: 20, empty: 0 });
-  });
-});
-
-describe('formatWeekOf', () => {
-  it('formats as MON D', () => {
-    expect(formatWeekOf('2026-09-28')).toBe('SEP 28');
-    expect(formatWeekOf('2026-10-05')).toBe('OCT 5');
   });
 });
 

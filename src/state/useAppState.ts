@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useReducer } from 'react';
-import { complete, undo } from '../domain/actions';
+import { complete, rename, undo } from '../domain/actions';
 import { toKey, type DateKey } from '../domain/dates';
 import { settle } from '../domain/settle';
 import type { TaskId } from '../domain/tasks';
@@ -9,7 +9,8 @@ import { STORAGE_KEY, load, save } from '../storage/persist';
 type Action =
   | { type: 'settle'; today: DateKey }
   | { type: 'replace'; state: AppState; today: DateKey }
-  | { type: 'complete' | 'undo'; id: TaskId; today: DateKey };
+  | { type: 'complete' | 'undo'; id: TaskId; today: DateKey }
+  | { type: 'rename'; name: string; today: DateKey };
 
 function reducer(state: AppState, action: Action): AppState {
   const settled = settle(state, action.today);
@@ -22,6 +23,8 @@ function reducer(state: AppState, action: Action): AppState {
       return complete(settled, action.id, action.today);
     case 'undo':
       return undo(settled, action.id, action.today);
+    case 'rename':
+      return rename(settled, action.name);
   }
 }
 
@@ -78,5 +81,7 @@ export function useAppState() {
   const completeTask = useCallback((id: TaskId) => dispatch({ type: 'complete', id, today: currentKey() }), []);
   const undoTask = useCallback((id: TaskId) => dispatch({ type: 'undo', id, today: currentKey() }), []);
 
-  return { state, today: currentKey(), complete: completeTask, undo: undoTask };
+  const renamePlayer = useCallback((name: string) => dispatch({ type: 'rename', name, today: currentKey() }), []);
+
+  return { state, today: currentKey(), complete: completeTask, undo: undoTask, rename: renamePlayer };
 }

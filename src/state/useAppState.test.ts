@@ -30,7 +30,7 @@ describe('useAppState', () => {
   });
 
   it('settles days missed while the app was closed', () => {
-    seed({ version: 1, points: 50, graceWeek: '2026-09-21', lastSettledDate: '2026-09-28', completions: { '2026-09-29': { reading: 1 } } });
+    seed({ version: 1, points: 50, graceWeek: '2026-09-21', weekNumber: 2, playerName: 'no_name', lastSettledDate: '2026-09-28', completions: { '2026-09-29': { reading: 1 } } });
     vi.setSystemTime(new Date(2026, 8, 30, 10, 0));
     const { result } = renderHook(() => useAppState());
     // Tue: +1 reading, -8 for four missed daily tasks
@@ -39,7 +39,7 @@ describe('useAppState', () => {
   });
 
   it('settles at midnight while the app stays open', () => {
-    seed({ version: 1, points: 50, graceWeek: '2026-09-21', lastSettledDate: '2026-09-28', completions: {} });
+    seed({ version: 1, points: 50, graceWeek: '2026-09-21', weekNumber: 2, playerName: 'no_name', lastSettledDate: '2026-09-28', completions: {} });
     vi.setSystemTime(new Date(2026, 8, 29, 23, 59, 30));
     const { result } = renderHook(() => useAppState());
     act(() => result.current.complete('reading'));
@@ -50,7 +50,7 @@ describe('useAppState', () => {
   });
 
   it('counts a tap after midnight for the new day even before the timer fires', () => {
-    seed({ version: 1, points: 50, graceWeek: '2026-09-21', lastSettledDate: '2026-09-28', completions: {} });
+    seed({ version: 1, points: 50, graceWeek: '2026-09-21', weekNumber: 2, playerName: 'no_name', lastSettledDate: '2026-09-28', completions: {} });
     vi.setSystemTime(new Date(2026, 8, 29, 23, 59, 50));
     const { result } = renderHook(() => useAppState());
 
@@ -62,7 +62,7 @@ describe('useAppState', () => {
   });
 
   it('settles when the window regains focus', () => {
-    seed({ version: 1, points: 50, graceWeek: '2026-09-21', lastSettledDate: '2026-09-28', completions: {} });
+    seed({ version: 1, points: 50, graceWeek: '2026-09-21', weekNumber: 2, playerName: 'no_name', lastSettledDate: '2026-09-28', completions: {} });
     vi.setSystemTime(new Date(2026, 8, 29, 23, 59, 50));
     const { result } = renderHook(() => useAppState());
 
@@ -74,7 +74,7 @@ describe('useAppState', () => {
     vi.setSystemTime(new Date(2026, 8, 30, 10, 0));
     const { result } = renderHook(() => useAppState());
 
-    seed({ version: 1, points: 7, graceWeek: '2026-09-28', lastSettledDate: '2026-09-29', completions: { '2026-09-30': { reading: 1 } } });
+    seed({ version: 1, points: 7, graceWeek: '2026-09-28', weekNumber: 1, playerName: 'no_name', lastSettledDate: '2026-09-29', completions: { '2026-09-30': { reading: 1 } } });
     act(() => { window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY })); });
     expect(result.current.state.points).toBe(7);
     expect(result.current.state.completions['2026-09-30']).toEqual({ reading: 1 });
@@ -83,12 +83,19 @@ describe('useAppState', () => {
     expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).completions['2026-09-30']).toEqual({ reading: 1, running: 1 });
   });
   it('settles right at midnight instead of up to a minute later', () => {
-    seed({ version: 1, points: 50, graceWeek: '2026-09-21', lastSettledDate: '2026-09-28', completions: {} });
+    seed({ version: 1, points: 50, graceWeek: '2026-09-21', weekNumber: 2, playerName: 'no_name', lastSettledDate: '2026-09-28', completions: {} });
     vi.setSystemTime(new Date(2026, 8, 29, 23, 59, 58));
     const { result } = renderHook(() => useAppState());
 
     act(() => vi.advanceTimersByTime(3_000));
     expect(result.current.today).toBe('2026-09-30');
     expect(result.current.state.lastSettledDate).toBe('2026-09-29');
+  });
+  it('renames the player and saves it', () => {
+    vi.setSystemTime(new Date(2026, 8, 30, 10, 0));
+    const { result } = renderHook(() => useAppState());
+    act(() => result.current.rename('Aragorn'));
+    expect(result.current.state.playerName).toBe('Aragorn');
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).playerName).toBe('Aragorn');
   });
 });

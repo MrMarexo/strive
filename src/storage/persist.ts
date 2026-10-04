@@ -1,3 +1,4 @@
+import { DEFAULT_PLAYER_NAME, MAX_NAME_LENGTH } from '../domain/actions';
 import { addDays, fromKey, mondayOf, toKey, type DateKey } from '../domain/dates';
 import { TASKS } from '../domain/tasks';
 import type { AppState } from '../domain/types';
@@ -9,7 +10,15 @@ const TASK_IDS = new Set<string>(TASKS.map((t) => t.id));
 const MAX_CLOCK_DRIFT_DAYS = 7;
 
 export function freshState(today: DateKey): AppState {
-  return { version: 1, points: 0, lastSettledDate: addDays(today, -1), completions: {}, graceWeek: mondayOf(today) };
+  return {
+    version: 1,
+    points: 0,
+    lastSettledDate: addDays(today, -1),
+    completions: {},
+    graceWeek: mondayOf(today),
+    weekNumber: 1,
+    playerName: DEFAULT_PLAYER_NAME,
+  };
 }
 
 function isCount(value: unknown): boolean {
@@ -28,6 +37,10 @@ export function isValidState(value: unknown): value is AppState {
   if (!isPlainObject(value)) return false;
   if (value.version !== 1 || !isCount(value.points)) return false;
   if (!isDateKey(value.lastSettledDate) || !isDateKey(value.graceWeek)) return false;
+  if (!isCount(value.weekNumber) || (value.weekNumber as number) < 1) return false;
+  if (typeof value.playerName !== 'string' || value.playerName.length < 1 || value.playerName.length > MAX_NAME_LENGTH) {
+    return false;
+  }
   if (!isPlainObject(value.completions)) return false;
   return Object.entries(value.completions).every(
     ([date, day]) =>
@@ -37,8 +50,21 @@ export function isValidState(value: unknown): value is AppState {
   );
 }
 
-// Reading window.localStorage itself throws when the browser blocks site data,
-// so it is only touched inside the try blocks.
+// Data saved before weekNumber/playerName existed: fill them in. The week number
+// counts the Sundays already settled since the first week.
+function migrate(value: unknown): unknown {
+  if (!isPlainObject(value) || !isDateKey(value.graceWeek) || !isDateKey(value.lastSettledDate)) return value;
+  const migrated = { ...value };
+  if (migrated.playerName === undefined) migrated.playerName = DEFAULT_PLAYER_NAME;
+  if (migrated.weekNumber === undefined) {
+    const currentWeek = mondayOf(addDays(value.lastSettledDate, 1));
+    let weekNumber = 1;
+    for (let monday = value.graceWeek; monday < currentWeek; monday = addDays(monday, 7)) weekNumber += 1;
+    migrated.weekNumber = weekNumber;
+  }
+  return migrated;
+}
+
 // A lastSettledDate far in the future (clock jumped ahead, hand edit) would block
 // settlement until that date. Pull it back to yesterday, keeping the points.
 function repairFutureDate(state: AppState, today: DateKey): AppState {
@@ -51,6 +77,8 @@ function repairFutureDate(state: AppState, today: DateKey): AppState {
   return { ...state, lastSettledDate: addDays(today, -1), completions };
 }
 
+// Reading window.localStorage itself throws when the browser blocks site data,
+// so it is only touched inside the try blocks.
 export function load(today: DateKey, storage?: Storage): AppState {
   let raw: string | null;
   try {
@@ -62,7 +90,7 @@ export function load(today: DateKey, storage?: Storage): AppState {
   if (raw === null) return freshState(today);
 
   try {
-    const parsed: unknown = JSON.parse(raw);
+    const parsed = migrate(JSON.parse(raw));
     if (isValidState(parsed)) return repairFutureDate(parsed, today);
   } catch {
     // fall through to the warning below

@@ -9,4 +9,6 @@ export interface AppState {
   lastSettledDate: DateKey;
   completions: Record<DateKey, DayCompletions>; // current week only
   graceWeek: DateKey; // Monday of the first week; no shortfall penalty that week
+  weekNumber: number; // 1 in the first week, +1 per settled Sunday
+  playerName: string;
 }

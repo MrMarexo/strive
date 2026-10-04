@@ -32,3 +32,11 @@ export function undo(state: AppState, id: TaskId, today: DateKey): AppState {
   if (count === 0) return state;
   return withCount(state, id, today, count - 1);
 }
+
+export const DEFAULT_PLAYER_NAME = 'no_name';
+export const MAX_NAME_LENGTH = 20;
+
+export function rename(state: AppState, name: string): AppState {
+  const playerName = name.trim().slice(0, MAX_NAME_LENGTH).trim() || DEFAULT_PLAYER_NAME;
+  return playerName === state.playerName ? state : { ...state, playerName };
+}

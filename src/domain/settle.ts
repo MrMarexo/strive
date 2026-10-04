@@ -31,7 +31,7 @@ function weeklyPenalty(completions: Completions, sunday: DateKey): number {
 }
 
 export function settle(state: AppState, today: DateKey): AppState {
-  let { points, lastSettledDate } = state;
+  let { points, lastSettledDate, weekNumber } = state;
   const completions = { ...state.completions };
 
   for (let day = addDays(lastSettledDate, 1); day < today; day = addDays(day, 1)) {
@@ -41,10 +41,11 @@ export function settle(state: AppState, today: DateKey): AppState {
         points = Math.max(0, points - weeklyPenalty(completions, day));
       }
       for (const d of weekDays(day)) delete completions[d];
+      weekNumber += 1;
     }
     lastSettledDate = day;
   }
 
   if (lastSettledDate === state.lastSettledDate) return state;
-  return { ...state, points, lastSettledDate, completions };
+  return { ...state, points, lastSettledDate, completions, weekNumber };
 }
