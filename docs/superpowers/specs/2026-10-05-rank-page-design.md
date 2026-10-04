@@ -67,7 +67,7 @@ Same visual language as the home screen: black background, `#B48CFF` / `#5A3F8C`
 - Keyboard: `ArrowLeft` / `ArrowRight` act like `[<]` / `[>]`; `Escape` goes home.
 - `RANK N/15` shows the rank's position.
 - **Unlocked rank:** sprite (200px wide, 10px per pixel), title, `<min> PTS+`, lore, `DAYS AS <TITLE>: N` (`DAY` when N = 1). The current rank also shows `◆ CURRENT RANK ◆`; if the ◆ glyph falls back to another font, use `* CURRENT RANK *` instead.
-- **Locked rank:** the "?" sprite in dim purple, the title, `REACH <min> PTS TO UNLOCK` instead of the lore, and no days line.
+- **Locked rank:** the "?" sprite in dim purple, the title shown as `???`, `REACH <min> PTS TO UNLOCK` instead of the points line and lore, and no days line. The page's accessible label is `Locked rank`, so the name doesn't leak.
 - Arrows use plain text brackets, because VT323 lacks ◀ ▶ (the same issue as the old ✓).
 
 ## 6. Sprites

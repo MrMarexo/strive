@@ -35,7 +35,7 @@ export function RankPage({ state, rank, onNavigate }: RankPageProps) {
   }, [prev, next, onNavigate]);
 
   return (
-    <section className="rank-page" aria-label={`${rank.title} rank`}>
+    <section className="rank-page" aria-label={unlocked ? `${rank.title} rank` : 'Locked rank'}>
       <div className="rank-page-top">
         <button type="button" className="btn" onClick={() => onNavigate(HOME)}>
           [ &lt; BACK ]
@@ -70,10 +70,10 @@ export function RankPage({ state, rank, onNavigate }: RankPageProps) {
           [&gt;]
         </button>
       </div>
-      <h2 className="rank-page-title">{title}</h2>
-      <p className="meta">{rank.min} PTS+</p>
+      <h2 className="rank-page-title">{unlocked ? title : '???'}</h2>
       {unlocked ? (
         <>
+          <p className="meta">{rank.min} PTS+</p>
           <p className="lore">{RANK_LORE[rank.title]}</p>
           <p className="rank-days">
             {days === 1 ? 'DAY' : 'DAYS'} AS {title}: {days}

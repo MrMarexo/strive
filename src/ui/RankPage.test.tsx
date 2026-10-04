@@ -42,6 +42,10 @@ describe('RankPage', () => {
     renderPage('Knight');
     expect(screen.getByRole('img', { name: 'Locked rank' })).toBeInTheDocument();
     expect(screen.getByText('REACH 75 PTS TO UNLOCK')).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Locked rank' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '???' })).toBeInTheDocument();
+    expect(screen.queryByText(/KNIGHT/)).not.toBeInTheDocument();
+    expect(screen.queryByText('75 PTS+')).not.toBeInTheDocument();
     expect(screen.queryByText(/whisper your name/)).not.toBeInTheDocument();
     expect(screen.queryByText(/AS KNIGHT/)).not.toBeInTheDocument();
   });
