@@ -1,22 +1,29 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useId, useRef, type ReactNode } from 'react';
 
-interface InfoDialogProps {
+interface ModalProps {
   title: string;
-  text: string;
   onClose: () => void;
+  children: ReactNode;
 }
 
-export function InfoDialog({ title, text, onClose }: InfoDialogProps) {
+export function Modal({ title, onClose, children }: ModalProps) {
+  const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
+  const onCloseRef = useRef(onClose);
 
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
+
+  // Mount-only: focusing again on every render would pull focus out of form fields.
   useEffect(() => {
     closeRef.current?.focus();
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape') onCloseRef.current();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, []);
 
   return (
     <div className="backdrop" onClick={onClose}>
@@ -24,18 +31,18 @@ export function InfoDialog({ title, text, onClose }: InfoDialogProps) {
         className="dialog"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="info-dialog-title"
+        aria-labelledby={titleId}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="dialog-top">
-          <h2 id="info-dialog-title" className="dialog-title">
+          <h2 id={titleId} className="dialog-title">
             {title}
           </h2>
           <button ref={closeRef} type="button" className="btn" aria-label="Close" onClick={onClose}>
             [ X ]
           </button>
         </div>
-        <p>{text}</p>
+        {children}
       </div>
     </div>
   );

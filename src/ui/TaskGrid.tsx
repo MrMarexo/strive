@@ -1,10 +1,10 @@
-import { useCallback, useRef, useState } from 'react';
+import { useRef, useState, type MouseEvent } from 'react';
 import type { DateKey } from '../domain/dates';
 import { remainingThisWeek, todayCount, willMiss } from '../domain/selectors';
-import { taskGroup, type TaskDef, type TaskGroup, type TaskId } from '../domain/tasks';
+import { findTask, taskGroup, taskStatus, type TaskDef, type TaskGroup, type TaskId } from '../domain/tasks';
 import type { AppState } from '../domain/types';
 import { CounterCard } from './CounterCard';
-import { InfoDialog } from './InfoDialog';
+import { Modal } from './Modal';
 import { TaskCard, type CardProps } from './TaskCard';
 
 interface TaskGridProps {
@@ -36,29 +36,56 @@ const GROUPS: { id: TaskGroup; title: string; info: string }[] = [
   },
 ];
 
-export function TaskGrid({ state, today, onComplete, onUndo }: TaskGridProps) {
-  const [openInfo, setOpenInfo] = useState<TaskGroup | null>(null);
-  const infoButtons = useRef<Partial<Record<TaskGroup, HTMLButtonElement | null>>>({});
-  const openGroup = GROUPS.find((group) => group.id === openInfo);
+type OpenModal = { kind: 'group'; group: TaskGroup } | { kind: 'task'; id: TaskId };
 
-  const closeInfo = useCallback(() => {
-    if (openInfo) infoButtons.current[openInfo]?.focus();
-    setOpenInfo(null);
-  }, [openInfo]);
+export function TaskGrid({ state, today, onComplete, onUndo }: TaskGridProps) {
+  const [modal, setModal] = useState<OpenModal | null>(null);
+  const opener = useRef<HTMLElement | null>(null);
+
+  const open = (next: OpenModal) => (event: MouseEvent<HTMLButtonElement>) => {
+    opener.current = event.currentTarget;
+    setModal(next);
+  };
+  const close = () => {
+    setModal(null);
+    opener.current?.focus();
+  };
 
   const renderCard = (task: TaskDef) => {
+    const status = taskStatus(task, today);
     const props: CardProps = {
       task,
+      status,
       todayCount: todayCount(state, task.id, today),
-      remaining: remainingThisWeek(state, task, today),
+      remaining: status === 'pending' ? null : remainingThisWeek(state, task, today),
       willMiss: willMiss(state, task, today),
       onComplete: () => onComplete(task.id),
       onUndo: () => onUndo(task.id),
+      onInfo: open({ kind: 'task', id: task.id }),
     };
     return task.maxPerDay === null ? (
       <CounterCard key={task.id} {...props} />
     ) : (
       <TaskCard key={task.id} {...props} />
+    );
+  };
+
+  const renderModal = () => {
+    if (!modal) return null;
+    if (modal.kind === 'group') {
+      const group = GROUPS.find((g) => g.id === modal.group)!;
+      return (
+        <Modal title={group.title} onClose={close}>
+          <p>{group.info}</p>
+        </Modal>
+      );
+    }
+    const task = findTask(state.tasks, modal.id);
+    if (!task) return null;
+    return (
+      <Modal title={task.name.toUpperCase()} onClose={close}>
+        <p>{task.description || 'No description yet.'}</p>
+      </Modal>
     );
   };
 
@@ -74,13 +101,10 @@ export function TaskGrid({ state, today, onComplete, onUndo }: TaskGridProps) {
                 {group.title}
               </h2>
               <button
-                ref={(el) => {
-                  infoButtons.current[group.id] = el;
-                }}
                 type="button"
                 className="btn info-btn"
                 aria-label={`About ${group.title} tasks`}
-                onClick={() => setOpenInfo(group.id)}
+                onClick={open({ kind: 'group', group: group.id })}
               >
                 [?]
               </button>
@@ -89,7 +113,7 @@ export function TaskGrid({ state, today, onComplete, onUndo }: TaskGridProps) {
           </section>
         );
       })}
-      {openGroup && <InfoDialog title={openGroup.title} text={openGroup.info} onClose={closeInfo} />}
+      {renderModal()}
     </>
   );
 }

@@ -230,6 +230,7 @@ a.rank:focus-visible {
 }
 
 .card {
+  position: relative;
   border: var(--border);
   padding: 16px;
   display: flex;
@@ -364,4 +365,37 @@ a.rank:focus-visible {
 
 .current-tag {
   animation: blink 1s steps(1) infinite;
+}
+
+.card-tools {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.tool-btn {
+  padding: 0 4px;
+  pointer-events: auto;
+}
+
+.tool-btn:only-child {
+  margin-right: auto;
+}
+
+.card-pending {
+  border-color: var(--dim);
+  color: var(--dim);
+}
+
+.card-pending .sprite {
+  fill: var(--dim);
+}
+
+.starts {
+  margin-top: auto;
+  letter-spacing: 2px;
 }

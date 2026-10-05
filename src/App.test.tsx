@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
 import { STORAGE_KEY, freshState } from './storage/persist';
-import { seedTasks } from './domain/tasks';
+import { seedTasks, type TaskDef } from './domain/tasks';
 
 describe('App', () => {
   beforeEach(() => {
@@ -163,5 +163,42 @@ describe('App', () => {
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     fireEvent.click(unlimited.parentElement!);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('shows a task description from the card [?] and returns focus', () => {
+    render(<App />);
+    const info = screen.getByRole('button', { name: 'About Sport & Exercise' });
+    fireEvent.click(info);
+    const dialog = screen.getByRole('dialog', { name: 'SPORT & EXERCISE' });
+    expect(within(dialog).getByText(/swimming, skating/)).toBeInTheDocument();
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(info).toHaveFocus();
+  });
+
+  it('falls back when a task has no description', () => {
+    const tasks = seedTasks('2026-09-28').map((t) => (t.id === 'reading' ? { ...t, description: '' } : t));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...freshState('2026-09-30'), tasks }));
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: 'About Reading' }));
+    expect(within(screen.getByRole('dialog', { name: 'READING' })).getByText('No description yet.')).toBeInTheDocument();
+  });
+
+  it('marks not-started tasks as STARTS MON and removed ones as RETIRES SUNDAY', () => {
+    const seeds = seedTasks('2026-09-28');
+    const tasks: TaskDef[] = [
+      ...seeds.map((t) => (t.id === 'coding' ? { ...t, retiresAfter: '2026-10-04' } : t)),
+      { ...seeds[0], id: 't-later', name: 'Meditate', startsOn: '2026-10-05' },
+    ];
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...freshState('2026-09-30'), tasks }));
+    render(<App />);
+
+    const later = screen.getByRole('article', { name: 'Meditate' });
+    expect(within(later).getByText('STARTS MON')).toBeInTheDocument();
+    expect(within(later).queryByRole('button', { name: '[ MARK DONE ]' })).not.toBeInTheDocument();
+
+    const coding = screen.getByRole('article', { name: 'Coding' });
+    expect(within(coding).getByText(/RETIRES SUNDAY/)).toBeInTheDocument();
+    expect(within(coding).getByRole('button', { name: '[ MARK DONE ]' })).toBeInTheDocument();
   });
 });
