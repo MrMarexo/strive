@@ -15,7 +15,8 @@ describe('useAppState', () => {
 
   afterEach(() => vi.useRealTimers());
 
-  it('starts fresh and records completions for today', () => {
+  it('records completions for today and saves them', () => {
+    seed({ version: 1, points: 0, graceWeek: '2026-09-28', weekNumber: 1, playerName: 'no_name', lastSettledDate: '2026-09-29', completions: {} });
     vi.setSystemTime(new Date(2026, 8, 30, 10, 0));
     const { result } = renderHook(() => useAppState());
     expect(result.current.today).toBe('2026-09-30');

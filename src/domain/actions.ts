@@ -1,6 +1,6 @@
 import { countOn } from './counts';
 import type { DateKey } from './dates';
-import { getTask, type TaskId } from './tasks';
+import { findTask, isActive, type TaskId } from './tasks';
 import type { AppState } from './types';
 
 function withCount(state: AppState, id: TaskId, today: DateKey, count: number): AppState {
@@ -18,16 +18,23 @@ function isLocked(state: AppState, today: DateKey): boolean {
   return today <= state.lastSettledDate;
 }
 
+// Only tasks active today can be tapped; this also keeps completions free of
+// not-yet-started tasks, which may be deleted outright.
+function canTap(state: AppState, id: TaskId, today: DateKey) {
+  const task = findTask(state.tasks, id);
+  return !isLocked(state, today) && task !== undefined && isActive(task, today) ? task : undefined;
+}
+
 export function complete(state: AppState, id: TaskId, today: DateKey): AppState {
-  if (isLocked(state, today)) return state;
-  const { maxPerDay } = getTask(id);
+  const task = canTap(state, id, today);
+  if (!task) return state;
   const count = countOn(state.completions, today, id);
-  if (maxPerDay !== null && count >= maxPerDay) return state;
+  if (task.maxPerDay !== null && count >= task.maxPerDay) return state;
   return withCount(state, id, today, count + 1);
 }
 
 export function undo(state: AppState, id: TaskId, today: DateKey): AppState {
-  if (isLocked(state, today)) return state;
+  if (!canTap(state, id, today)) return state;
   const count = countOn(state.completions, today, id);
   if (count === 0) return state;
   return withCount(state, id, today, count - 1);

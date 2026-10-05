@@ -1,11 +1,14 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
+import { STORAGE_KEY, freshState } from './storage/persist';
+import { seedTasks } from './domain/tasks';
 
 describe('App', () => {
   beforeEach(() => {
     window.location.hash = '';
     localStorage.clear();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...freshState('2026-09-30'), tasks: seedTasks('2026-09-28') }));
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 8, 30, 10, 0)); // Wednesday
   });

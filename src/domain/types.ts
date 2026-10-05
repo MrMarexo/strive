@@ -1,5 +1,5 @@
 import type { DateKey } from './dates';
-import type { TaskId } from './tasks';
+import type { TaskDef, TaskId } from './tasks';
 
 export type DayCompletions = Partial<Record<TaskId, number>>;
 
@@ -12,4 +12,5 @@ export interface AppState {
   weekNumber: number; // 1 in the first week, +1 per settled Sunday
   playerName: string;
   rankDays: Record<string, number>; // rank title -> settled days spent in that rank
+  tasks: TaskDef[]; // the player's tasks, in display order
 }

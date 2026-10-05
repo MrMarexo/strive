@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { settle } from './settle';
 import type { AppState, DayCompletions } from './types';
+import { seedTasks, type TaskDef } from './tasks';
 import { weekDays } from './dates';
 
 const ALL_DAILY: DayCompletions = { reading: 1, running: 1, abstinence: 1, logic: 1, language: 1 };
 
 function state(over: Partial<AppState> = {}): AppState {
-  return { version: 1, points: 100, lastSettledDate: '2026-09-27', completions: {}, graceWeek: '2026-09-21', weekNumber: 1, playerName: 'no_name', rankDays: {}, ...over };
+  return { version: 1, points: 100, lastSettledDate: '2026-09-27', completions: {}, graceWeek: '2026-09-21', weekNumber: 1, playerName: 'no_name', rankDays: {}, tasks: seedTasks('2026-01-05'), ...over };
 }
 
 describe('settle', () => {
@@ -131,5 +132,29 @@ describe('settle', () => {
   it('credits every day of a gap and adds to existing days', () => {
     expect(settle(state({ points: 0 }), '2026-10-05').rankDays).toEqual({ Beggar: 7 });
     expect(settle(state({ points: 0, rankDays: { Beggar: 4 } }), '2026-09-29').rankDays).toEqual({ Beggar: 5 });
+  });
+
+  it('ignores a task before it starts and scores it from its first Monday', () => {
+    const extra: TaskDef = { ...seedTasks('2026-10-05')[0], id: 't-new', startsOn: '2026-10-05' };
+    const s = state({ tasks: [...seedTasks('2026-01-05'), extra], lastSettledDate: '2026-10-03', points: 100 });
+    // Sun 10-04: t-new inactive; 8 seed tasks all missed -> -10, weekly penalty -26
+    expect(settle(s, '2026-10-05').points).toBe(64);
+    // Mon 10-05: t-new active and missed too -> -12
+    expect(settle(s, '2026-10-06').points).toBe(52);
+  });
+
+  it('keeps a retiring task scored through its Sunday, then deletes it', () => {
+    const tasks = seedTasks('2026-01-05').map((t) => (t.id === 'coding' ? { ...t, retiresAfter: '2026-10-04' } : t));
+    const s = state({ tasks, lastSettledDate: '2026-10-03', points: 100, completions: { '2026-10-04': { coding: 1 } } });
+    const result = settle(s, '2026-10-05');
+    // Sun: -10 daily, +1 coding; penalty coding 4×2 + sport 8 + chores 8 = 24 -> 67
+    expect(result.points).toBe(67);
+    expect(result.tasks.map((t) => t.id)).not.toContain('coding');
+    expect(result.tasks).toHaveLength(7);
+  });
+
+  it('does not delete a retiring task before its Sunday is settled', () => {
+    const tasks = seedTasks('2026-01-05').map((t) => (t.id === 'coding' ? { ...t, retiresAfter: '2026-10-04' } : t));
+    expect(settle(state({ tasks, lastSettledDate: '2026-10-02' }), '2026-10-04').tasks).toHaveLength(8);
   });
 });

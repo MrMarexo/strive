@@ -1,7 +1,7 @@
 import type { TaskDef } from '../domain/tasks';
 import { cadenceLabel } from './format';
 import { PixelSprite } from './PixelSprite';
-import { CHECK, SPRITES } from './sprites';
+import { CHECK, IMAGE_LIBRARY } from './images';
 
 export interface CardProps {
   task: TaskDef;
@@ -16,7 +16,7 @@ export function TaskCard({ task, todayCount, remaining, willMiss, onComplete, on
   const done = todayCount > 0;
   return (
     <article className="card" aria-label={task.name}>
-      <PixelSprite map={SPRITES[task.id]} title={task.name} />
+      <PixelSprite map={IMAGE_LIBRARY[task.image]} title={task.name} />
       <h3>{task.name.toUpperCase()}</h3>
       <p className="sub">
         {remaining !== null && cadenceLabel(remaining)}

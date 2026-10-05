@@ -7,7 +7,7 @@ import type { AppState } from '../domain/types';
 function state(over: Partial<AppState> = {}): AppState {
   return {
     version: 1, points: 0, lastSettledDate: '2026-10-04', completions: {}, graceWeek: '2026-09-28',
-    weekNumber: 1, playerName: 'no_name', rankDays: {}, ...over,
+    weekNumber: 1, playerName: 'no_name', rankDays: {}, tasks: [], ...over,
   };
 }
 

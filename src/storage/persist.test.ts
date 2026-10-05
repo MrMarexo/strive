@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import { STORAGE_KEY, freshState, load, save } from './persist';
 import type { AppState } from '../domain/types';
+import { seedTasks } from '../domain/tasks';
 
 const TODAY = '2026-09-30';
 
@@ -13,6 +14,7 @@ const valid: AppState = {
   weekNumber: 1,
   playerName: 'Aragorn',
   rankDays: { Beggar: 2 },
+  tasks: seedTasks('2026-09-28'),
 };
 
 describe('persist', () => {
@@ -28,7 +30,7 @@ describe('persist', () => {
   it('creates a fresh state whose first scored day is today', () => {
     expect(freshState(TODAY)).toEqual({
       version: 1, points: 0, lastSettledDate: '2026-09-29', completions: {}, graceWeek: '2026-09-28',
-      weekNumber: 1, playerName: 'no_name', rankDays: {},
+      weekNumber: 1, playerName: 'no_name', rankDays: {}, tasks: [],
     });
   });
 
@@ -56,6 +58,11 @@ describe('persist', () => {
     ['negative rank days', JSON.stringify({ ...valid, rankDays: { Beggar: -1 } })],
     ['fractional rank days', JSON.stringify({ ...valid, rankDays: { Beggar: 0.5 } })],
     ['array rank days', JSON.stringify({ ...valid, rankDays: [] })],
+    ['duplicate task id', JSON.stringify({ ...valid, tasks: [...seedTasks('2026-09-28'), seedTasks('2026-09-28')[0]] })],
+    ['empty task name', JSON.stringify({ ...valid, tasks: [{ ...seedTasks('2026-09-28')[0], name: '' }] })],
+    ['task target too high', JSON.stringify({ ...valid, tasks: [{ ...seedTasks('2026-09-28')[1], cadence: { kind: 'weekly', target: 8 } }] })],
+    ['unknown task image', JSON.stringify({ ...valid, tasks: [{ ...seedTasks('2026-09-28')[0], image: 'dragon' }] })],
+    ['retiresAfter not a Sunday', JSON.stringify({ ...valid, tasks: [{ ...seedTasks('2026-09-28')[0], retiresAfter: '2026-10-03' }] })],
     ['impossible calendar date', JSON.stringify({ ...valid, lastSettledDate: '2026-13-45' })],
     ['missing graceWeek', JSON.stringify({ ...valid, graceWeek: undefined })],
     ['unknown task id', JSON.stringify({ ...valid, completions: { '2026-09-30': { napping: 1 } } })],
@@ -102,8 +109,10 @@ describe('persist', () => {
     expect(load(TODAY)).toEqual(drifted);
   });
   it('migrates data saved before names and week numbers existed', () => {
-    const { weekNumber: _w, playerName: _p, rankDays: _r, ...old } = { ...valid, graceWeek: '2026-09-21' };
+    const { weekNumber: _w, playerName: _p, rankDays: _r, tasks: _t, ...old } = { ...valid, graceWeek: '2026-09-21' };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(old));
-    expect(load(TODAY)).toEqual({ ...old, weekNumber: 2, playerName: 'no_name', rankDays: {} });
+    expect(load(TODAY)).toEqual({
+      ...old, weekNumber: 2, playerName: 'no_name', rankDays: {}, tasks: seedTasks('2026-09-21'),
+    });
   });
 });

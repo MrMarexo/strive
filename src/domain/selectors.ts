@@ -2,7 +2,7 @@ import { countOn, weekCountThrough, weeklyAwarded } from './counts';
 import { daysLeftAfter, type DateKey } from './dates';
 import { RANKS, getRank } from './ranks';
 import { COMPLETE_POINTS } from './settle';
-import { TASKS, type TaskDef, type TaskId } from './tasks';
+import { activeTasks, isActive, type TaskDef, type TaskId } from './tasks';
 import type { AppState } from './types';
 
 export function todayCount(state: AppState, id: TaskId, today: DateKey): number {
@@ -21,14 +21,14 @@ export function remainingThisWeek(state: AppState, task: TaskDef, today: DateKey
 // Sessions that won't fit if nothing more is done today: today's session counts
 // as missed until it's marked done. Only for once-per-day weekly tasks.
 export function willMiss(state: AppState, task: TaskDef, today: DateKey): number {
-  if (task.maxPerDay !== 1) return 0;
+  if (task.maxPerDay !== 1 || !isActive(task, today)) return 0;
   const remaining = remainingThisWeek(state, task, today);
   return remaining === null ? 0 : Math.max(0, remaining - daysLeftAfter(today));
 }
 
 export function pendingToday(state: AppState, today: DateKey): number {
   let points = 0;
-  for (const task of TASKS) {
+  for (const task of activeTasks(state.tasks, today)) {
     if (task.cadence.kind === 'daily') {
       if (todayCount(state, task.id, today) > 0) points += COMPLETE_POINTS;
     } else {

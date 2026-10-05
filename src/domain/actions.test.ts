@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { complete, rename, undo } from './actions';
 import type { AppState } from './types';
+import { seedTasks } from './tasks';
 
 const TODAY = '2026-09-30';
 
 function state(completions: AppState['completions'] = {}): AppState {
-  return { version: 1, points: 10, lastSettledDate: '2026-09-29', completions, graceWeek: '2026-09-21', weekNumber: 1, playerName: 'no_name', rankDays: {} };
+  return { version: 1, points: 10, lastSettledDate: '2026-09-29', completions, graceWeek: '2026-09-21', weekNumber: 1, playerName: 'no_name', rankDays: {}, tasks: seedTasks('2026-01-05') };
 }
 
 describe('complete', () => {
@@ -64,5 +65,15 @@ describe('rename', () => {
 
   it('caps the name at 20 characters', () => {
     expect(rename(state(), 'Gandalf the Grey Wanderer').playerName).toBe('Gandalf the Grey Wan');
+  });
+});
+
+describe('inactive tasks', () => {
+  it('ignores taps on unknown and not-yet-started tasks', () => {
+    const pending = { ...seedTasks('2026-10-05')[0], id: 't-later' };
+    const s = { ...state(), tasks: [...state().tasks, pending] };
+    expect(complete(s, 't-later', TODAY)).toBe(s);
+    expect(complete(s, 'nope', TODAY)).toBe(s);
+    expect(undo(s, 't-later', TODAY)).toBe(s);
   });
 });

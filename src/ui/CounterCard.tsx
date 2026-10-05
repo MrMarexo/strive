@@ -1,12 +1,12 @@
 import { cadenceLabel } from './format';
 import { PixelSprite } from './PixelSprite';
-import { SPRITES } from './sprites';
+import { IMAGE_LIBRARY } from './images';
 import type { CardProps } from './TaskCard';
 
 export function CounterCard({ task, todayCount, remaining, onComplete, onUndo }: CardProps) {
   return (
     <article className="card" aria-label={task.name}>
-      <PixelSprite map={SPRITES[task.id]} title={task.name} />
+      <PixelSprite map={IMAGE_LIBRARY[task.image]} title={task.name} />
       <h3>{task.name.toUpperCase()}</h3>
       <p className="sub">{remaining !== null && cadenceLabel(remaining)}</p>
       <div className="counter">

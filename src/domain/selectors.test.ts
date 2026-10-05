@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { daysInRank, isUnlocked, pendingToday, remainingThisWeek, todayCount, weekCount, willMiss } from './selectors';
-import { getTask } from './tasks';
+import { seedTasks } from './tasks';
 import type { AppState } from './types';
+
+const getTask = (id: string) => seedTasks('2026-01-05').find((t) => t.id === id)!;
 
 const SAT = '2026-10-03';
 
 function state(completions: AppState['completions'] = {}): AppState {
-  return { version: 1, points: 0, lastSettledDate: '2026-10-02', completions, graceWeek: '2026-09-21', weekNumber: 1, playerName: 'no_name', rankDays: {} };
+  return { version: 1, points: 0, lastSettledDate: '2026-10-02', completions, graceWeek: '2026-09-21', weekNumber: 1, playerName: 'no_name', rankDays: {}, tasks: seedTasks('2026-01-05') };
 }
 
 describe('counts', () => {
@@ -91,5 +93,14 @@ describe('isUnlocked', () => {
     const dropped = { ...state(), points: 0, rankDays: { Beggar: 3, Knight: 2 } };
     expect(isUnlocked(dropped, 'Peasant')).toBe(true);
     expect(isUnlocked(dropped, 'Ranger')).toBe(false);
+  });
+});
+
+describe('inactive tasks in selectors', () => {
+  it('leaves not-yet-started tasks out of pending points and will-miss', () => {
+    const later = { ...getTask('coding'), id: 't-later', startsOn: '2026-10-05' };
+    const s = { ...state({ [SAT]: { reading: 1 } }), tasks: [getTask('reading'), later] };
+    expect(pendingToday(s, SAT)).toBe(1);
+    expect(willMiss(s, later, SAT)).toBe(0);
   });
 });
