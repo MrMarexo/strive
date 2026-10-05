@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
-import { STORAGE_KEY, freshState, load, save } from './persist';
+import { STORAGE_KEY, freshState, load, loadStored, save } from './persist';
 import type { AppState } from '../domain/types';
 import { seedTasks } from '../domain/tasks';
 
@@ -65,7 +65,6 @@ describe('persist', () => {
     ['retiresAfter not a Sunday', JSON.stringify({ ...valid, tasks: [{ ...seedTasks('2026-09-28')[0], retiresAfter: '2026-10-03' }] })],
     ['impossible calendar date', JSON.stringify({ ...valid, lastSettledDate: '2026-13-45' })],
     ['missing graceWeek', JSON.stringify({ ...valid, graceWeek: undefined })],
-    ['unknown task id', JSON.stringify({ ...valid, completions: { '2026-09-30': { napping: 1 } } })],
     ['fractional count', JSON.stringify({ ...valid, completions: { '2026-09-30': { reading: 0.5 } } })],
     ['array completions', JSON.stringify({ ...valid, completions: [] })],
   ])('falls back to a fresh state on %s', (_label, raw) => {
@@ -114,5 +113,19 @@ describe('persist', () => {
     expect(load(TODAY)).toEqual({
       ...old, weekNumber: 2, playerName: 'no_name', rankDays: {}, tasks: seedTasks('2026-09-21'),
     });
+  });
+
+  it('drops taps on unknown tasks instead of resetting everything', () => {
+    save({ ...valid, completions: { '2026-09-30': { reading: 1, napping: 2 }, '2026-09-29': { napping: 1 } } });
+    expect(load(TODAY)).toEqual({ ...valid, completions: { '2026-09-30': { reading: 1 }, '2026-09-29': {} } });
+    expect(warn).toHaveBeenCalled();
+  });
+
+  it('tells stored data apart from missing or invalid data', () => {
+    expect(loadStored(TODAY)).toBeNull();
+    localStorage.setItem(STORAGE_KEY, '{not json');
+    expect(loadStored(TODAY)).toBeNull();
+    save(valid);
+    expect(loadStored(TODAY)).toEqual(valid);
   });
 });

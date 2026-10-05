@@ -7,7 +7,7 @@ import { toKey, type DateKey } from '../domain/dates';
 import { settle } from '../domain/settle';
 import type { TaskId } from '../domain/tasks';
 import type { AppState } from '../domain/types';
-import { STORAGE_KEY, load, save } from '../storage/persist';
+import { STORAGE_KEY, load, loadStored, save } from '../storage/persist';
 
 type Action =
   | { type: 'settle'; today: DateKey }
@@ -45,7 +45,11 @@ function reducer(state: AppState, action: Action): AppState {
 const currentKey = () => toKey(new Date());
 
 // Generated outside the reducer so StrictMode's double-run sees the same id.
-const newTaskId = () => `t-${crypto.randomUUID().replace(/-/g, '').slice(0, 8)}`;
+// getRandomValues (unlike randomUUID) also works on plain-HTTP pages, e.g. the dev server opened from a phone.
+const newTaskId = () => {
+  const bytes = crypto.getRandomValues(new Uint8Array(4));
+  return `t-${Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')}`;
+};
 
 function init(): AppState {
   const today = currentKey();
@@ -68,7 +72,9 @@ export function useAppState() {
     const onStorage = (event: StorageEvent) => {
       if (event.key !== STORAGE_KEY) return;
       const today = currentKey();
-      dispatch({ type: 'replace', state: load(today), today });
+      // Ignore data this version can't read (e.g. from a tab running older code) rather than resetting.
+      const next = loadStored(today);
+      if (next) dispatch({ type: 'replace', state: next, today });
     };
     // Fire right after local midnight so the new day shows immediately; the
     // interval still covers sleep/wake and clock changes.

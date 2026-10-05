@@ -105,25 +105,69 @@ function repairFutureDate(state: AppState, today: DateKey): AppState {
   return { ...state, lastSettledDate: addDays(today, -1), completions };
 }
 
+// Taps on tasks that no longer exist would make the whole state invalid (and reset it);
+// drop just those taps instead.
+function dropOrphanCompletions(value: Record<string, unknown>): Record<string, unknown> {
+  if (!Array.isArray(value.tasks) || !isPlainObject(value.completions)) return value;
+  const ids = new Set(value.tasks.map((task) => (isPlainObject(task) ? task.id : undefined)));
+  let dropped = false;
+  const completions: Record<string, unknown> = {};
+  for (const [day, counts] of Object.entries(value.completions)) {
+    if (!isPlainObject(counts)) {
+      completions[day] = counts;
+      continue;
+    }
+    const kept: Record<string, unknown> = {};
+    for (const [id, n] of Object.entries(counts)) {
+      if (ids.has(id)) kept[id] = n;
+      else dropped = true;
+    }
+    completions[day] = kept;
+  }
+  if (!dropped) return value;
+  console.warn('Strive: dropped taps on tasks that no longer exist');
+  return { ...value, completions };
+}
+
+type StoredRead =
+  | { kind: 'ok'; state: AppState }
+  | { kind: 'missing' }
+  | { kind: 'invalid' }
+  | { kind: 'unavailable'; error: unknown };
+
 // Reading window.localStorage itself throws when the browser blocks site data,
 // so it is only touched inside the try blocks.
-export function load(today: DateKey, storage?: Storage): AppState {
+function readStored(today: DateKey, storage?: Storage): StoredRead {
   let raw: string | null;
   try {
     raw = (storage ?? window.localStorage).getItem(STORAGE_KEY);
   } catch (error) {
-    console.warn('Strive: storage unavailable, starting fresh', error);
-    return freshState(today);
+    return { kind: 'unavailable', error };
   }
-  if (raw === null) return freshState(today);
-
+  if (raw === null) return { kind: 'missing' };
   try {
     const parsed = migrate(JSON.parse(raw));
-    if (isValidState(parsed)) return repairFutureDate(parsed, today);
+    if (isPlainObject(parsed)) {
+      const repaired = dropOrphanCompletions(parsed);
+      if (isValidState(repaired)) return { kind: 'ok', state: repairFutureDate(repaired, today) };
+    }
   } catch {
-    // fall through to the warning below
+    // invalid JSON
   }
-  console.warn('Strive: stored data is invalid, starting fresh');
+  return { kind: 'invalid' };
+}
+
+// The stored state, or null when there is none or it can't be used.
+export function loadStored(today: DateKey, storage?: Storage): AppState | null {
+  const read = readStored(today, storage);
+  return read.kind === 'ok' ? read.state : null;
+}
+
+export function load(today: DateKey, storage?: Storage): AppState {
+  const read = readStored(today, storage);
+  if (read.kind === 'ok') return read.state;
+  if (read.kind === 'unavailable') console.warn('Strive: storage unavailable, starting fresh', read.error);
+  if (read.kind === 'invalid') console.warn('Strive: stored data is invalid, starting fresh');
   return freshState(today);
 }
 

@@ -133,4 +133,10 @@ describe('task management', () => {
     const added = addTask(state(), input, TODAY, 't-1');
     expect(removeTask(added, 't-1', TODAY).tasks.map((t) => t.id)).not.toContain('t-1');
   });
+
+  it('drops any taps on a task it deletes outright', () => {
+    const added = addTask(state(), input, TODAY, 't-1');
+    const tapped = { ...added, completions: { '2026-10-05': { 't-1': 1, reading: 1 } } };
+    expect(removeTask(tapped, 't-1', TODAY).completions).toEqual({ '2026-10-05': { reading: 1 } });
+  });
 });

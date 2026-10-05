@@ -42,7 +42,7 @@ interface TaskDef {
 - **Add:** `addTask(state, input, today, id)`, where `input = { group, name, description, image, target? }`. `startsOn` = today if today is Monday, otherwise next Monday. The task is appended to `tasks`.
 - **Edit:** `editTask(state, id, { name, description, image })`. Type, target and dates never change.
 - **Remove:** `removeTask(state, id, today)`:
-  - Not started (`startsOn > today`): deleted from `tasks` immediately.
+  - Not started (`startsOn > today`): deleted from `tasks` immediately, along with any completions for it (possible only if the clock moved back).
   - Started: `retiresAfter` = the Sunday of today's week. The task stays active and fully scored through that Sunday, Sunday penalty included.
 - **Undo remove:** `undoRemove(state, id)` sets `retiresAfter` back to `null`. It is available until that Sunday is settled.
 - **Retirement:** when settlement finishes a Sunday (after its penalty), every task with `retiresAfter` equal to that Sunday is deleted from `tasks`. That week's completions are cleared as before.
@@ -64,7 +64,8 @@ interface TaskDef {
 | chores | House Chores | weekly-unlimited 4 | broom | Any household chore – can be logged more than once a day. |
 | language | Language Learning | daily | speech | Practise a foreign language every day. |
 
-- **Validation:** `tasks` must be an array of valid `TaskDef`s (all field rules in §3, a known image key, valid date keys, a Sunday `retiresAfter` or `null`) with unique ids. Every completion key must be the id of a task in `tasks`. Anything else counts as invalid data (fresh state plus a warning, as before).
+- **Validation:** `tasks` must be an array of valid `TaskDef`s (all field rules in §3, a known image key, valid date keys, a Sunday `retiresAfter` or `null`) with unique ids. Anything else counts as invalid data (fresh state plus a warning, as before). Exception: completion entries for ids not in `tasks` are dropped on load (with a warning) instead of invalidating everything, since taps are the least valuable part of the state.
+- **Other tabs:** a `storage` event carrying data this version can't read is ignored instead of replacing the current state.
 
 ## 6. Image library
 

@@ -120,4 +120,27 @@ describe('useAppState', () => {
     expect(result.current.state.tasks.find((t) => t.id === 'coding')?.retiresAfter).toBeNull();
     expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).tasks).toHaveLength(10);
   });
+
+  it('ignores invalid data written by another tab', () => {
+    seed({ version: 1, points: 50, graceWeek: '2026-09-21', weekNumber: 2, playerName: 'no_name', lastSettledDate: '2026-09-29', completions: {} });
+    vi.setSystemTime(new Date(2026, 8, 30, 10, 0));
+    const { result } = renderHook(() => useAppState());
+    localStorage.setItem(STORAGE_KEY, '{"version": 99}');
+    act(() => { window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY })); });
+    expect(result.current.state.points).toBe(50);
+    expect(result.current.state.tasks).toHaveLength(8);
+  });
+
+  it('creates task ids without crypto.randomUUID (plain-HTTP pages)', () => {
+    const original = crypto.randomUUID;
+    Object.defineProperty(crypto, 'randomUUID', { value: undefined, configurable: true });
+    try {
+      vi.setSystemTime(new Date(2026, 8, 30, 10, 0));
+      const { result } = renderHook(() => useAppState());
+      act(() => result.current.addTask({ group: 'daily', name: 'Meditate', description: '', image: 'lotus' }));
+      expect(result.current.state.tasks.at(-1)?.id).toMatch(/^t-[0-9a-f]{8}$/);
+    } finally {
+      Object.defineProperty(crypto, 'randomUUID', { value: original, configurable: true });
+    }
+  });
 });

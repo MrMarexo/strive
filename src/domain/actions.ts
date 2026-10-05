@@ -114,7 +114,16 @@ export function editTask(state: AppState, id: TaskId, edit: TaskEdit): AppState 
 export function removeTask(state: AppState, id: TaskId, today: DateKey): AppState {
   const task = findTask(state.tasks, id);
   if (!task) return state;
-  if (task.startsOn > today) return { ...state, tasks: state.tasks.filter((t) => t.id !== id) };
+  if (task.startsOn > today) {
+    // Normally it has no taps, but a clock moved back can leave some; orphans would invalidate saved data.
+    const completions = Object.fromEntries(
+      Object.entries(state.completions).map(([day, counts]) => {
+        const { [id]: _dropped, ...rest } = counts;
+        return [day, rest];
+      }),
+    );
+    return { ...state, tasks: state.tasks.filter((t) => t.id !== id), completions };
+  }
   return replaceTask(state, { ...task, retiresAfter: addDays(mondayOf(today), 6) });
 }
 
