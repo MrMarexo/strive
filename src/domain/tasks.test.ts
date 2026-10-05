@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TASKS, getTask } from './tasks';
+import { TASKS, getTask, taskGroup } from './tasks';
 
 describe('tasks', () => {
   it('defines the eight tasks in display order', () => {
@@ -23,5 +23,13 @@ describe('tasks', () => {
     for (const task of TASKS) {
       expect(task.maxPerDay).toBe(task.id === 'chores' ? null : 1);
     }
+  });
+
+  it('groups tasks by daily, weekly and weekly with no day limit', () => {
+    expect(TASKS.filter((t) => taskGroup(t) === 'daily').map((t) => t.id)).toEqual([
+      'reading', 'running', 'abstinence', 'logic', 'language',
+    ]);
+    expect(TASKS.filter((t) => taskGroup(t) === 'weekly').map((t) => t.id)).toEqual(['coding', 'sport']);
+    expect(TASKS.filter((t) => taskGroup(t) === 'weekly-unlimited').map((t) => t.id)).toEqual(['chores']);
   });
 });

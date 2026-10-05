@@ -147,10 +147,13 @@ Single screen, retro old-school video game / terminal aesthetic.
 - Text progress bar of 20 cells using `▓` (filled) and `░` (empty) proportional to `progress`, followed by `N TO <NEXT RANK>` (or `MAX RANK` at the top).
 - `WEEK N` (the app-week number).
 
-**Task grid** — responsive: 1 column (phone), 2 (tablet), 4 (desktop).
+**Task grid** — split into three titled sections, each with a one-line dim hint and its own responsive grid (1 column on phone, 2 on tablet, 4 on desktop). The section comes from `taskGroup(task)`:
+- `DAILY` (daily tasks): `EVERY DAY · +1 WHEN DONE · -2 IF MISSED`
+- `WEEKLY` (weekly, max once per day): `ONCE A DAY AT MOST · +1 EACH · -2 PER SESSION SHORT ON SUNDAY`
+- `WEEKLY · NO DAY LIMIT` (weekly, unlimited per day): `AS MANY A DAY AS YOU LIKE · +1 EACH UP TO TARGET · -2 PER SESSION SHORT ON SUNDAY`
 
 **TaskCard** (maxPerDay = 1)
-- 10×10 pixel sprite, task name, subtitle: `DAILY` or `N LEFT THIS WEEK` / `TARGET MET`, plus a `WILL MISS N` label when applicable.
+- 10×10 pixel sprite, task name, subtitle: empty for daily tasks (the section heading says it), otherwise `N LEFT THIS WEEK` / `TARGET MET`, plus a `WILL MISS N` label when applicable.
 - Toggle button: `[ MARK DONE ]` ↔ `[ DONE ✓ ]` (tapping done undoes, today only).
 
 **CounterCard** (chores)

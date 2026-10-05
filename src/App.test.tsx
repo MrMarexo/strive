@@ -114,4 +114,25 @@ describe('App', () => {
     act(() => vi.advanceTimersByTime(3_000));
     expect(screen.getByText('DAYS AS BEGGAR: 2')).toBeInTheDocument();
   });
+
+  it('groups the dashboard into daily, weekly and no-day-limit sections with a hint each', () => {
+    render(<App />);
+    const names = (title: string) =>
+      within(screen.getByRole('region', { name: title }))
+        .getAllByRole('article')
+        .map((a) => a.getAttribute('aria-label'));
+    expect(names('DAILY')).toEqual(['Reading', 'Running', 'Abstinence', 'Logic Workout', 'Language Learning']);
+    expect(names('WEEKLY')).toEqual(['Coding', 'Sport & Exercise']);
+    expect(names('WEEKLY · NO DAY LIMIT')).toEqual(['House Chores']);
+    expect(screen.getByText('EVERY DAY · +1 WHEN DONE · -2 IF MISSED')).toBeInTheDocument();
+    expect(screen.getByText('ONCE A DAY AT MOST · +1 EACH · -2 PER SESSION SHORT ON SUNDAY')).toBeInTheDocument();
+    expect(
+      screen.getByText('AS MANY A DAY AS YOU LIKE · +1 EACH UP TO TARGET · -2 PER SESSION SHORT ON SUNDAY'),
+    ).toBeInTheDocument();
+  });
+
+  it('drops the redundant DAILY label from daily cards', () => {
+    render(<App />);
+    expect(within(screen.getByRole('article', { name: 'Reading' })).queryByText('DAILY')).not.toBeInTheDocument();
+  });
 });

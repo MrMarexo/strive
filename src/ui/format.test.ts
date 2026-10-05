@@ -16,8 +16,7 @@ describe('barCells', () => {
 });
 
 describe('cadenceLabel', () => {
-  it('labels daily and weekly tasks', () => {
-    expect(cadenceLabel(null)).toBe('DAILY');
+  it('labels weekly progress', () => {
     expect(cadenceLabel(3)).toBe('3 LEFT THIS WEEK');
     expect(cadenceLabel(0)).toBe('TARGET MET');
   });

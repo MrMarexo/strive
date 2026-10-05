@@ -7,8 +7,8 @@ export function CounterCard({ task, todayCount, remaining, onComplete, onUndo }:
   return (
     <article className="card" aria-label={task.name}>
       <PixelSprite map={SPRITES[task.id]} title={task.name} />
-      <h2>{task.name.toUpperCase()}</h2>
-      <p className="sub">{cadenceLabel(remaining)}</p>
+      <h3>{task.name.toUpperCase()}</h3>
+      <p className="sub">{remaining !== null && cadenceLabel(remaining)}</p>
       <div className="counter">
         <button
           type="button"

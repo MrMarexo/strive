@@ -150,6 +150,30 @@ a.rank:focus-visible {
   color: var(--dim);
 }
 
+.task-group {
+  margin-bottom: 28px;
+}
+
+.group-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 28px;
+  font-weight: normal;
+  letter-spacing: 2px;
+}
+
+.group-title::after {
+  content: '';
+  flex: 1;
+  border-top: 2px solid var(--dim);
+}
+
+.group-hint {
+  color: var(--dim);
+  margin: 2px 0 12px;
+}
+
 .grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -178,7 +202,7 @@ a.rank:focus-visible {
   text-align: center;
 }
 
-.card h2 {
+.card h3 {
   font-size: 28px;
   font-weight: normal;
 }

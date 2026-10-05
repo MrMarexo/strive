@@ -29,3 +29,10 @@ export function getTask(id: TaskId): TaskDef {
   if (!task) throw new Error(`Unknown task: ${id}`);
   return task;
 }
+
+export type TaskGroup = 'daily' | 'weekly' | 'weekly-unlimited';
+
+export function taskGroup(task: TaskDef): TaskGroup {
+  if (task.cadence.kind === 'daily') return 'daily';
+  return task.maxPerDay === null ? 'weekly-unlimited' : 'weekly';
+}

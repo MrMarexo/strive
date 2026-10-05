@@ -17,9 +17,9 @@ export function TaskCard({ task, todayCount, remaining, willMiss, onComplete, on
   return (
     <article className="card" aria-label={task.name}>
       <PixelSprite map={SPRITES[task.id]} title={task.name} />
-      <h2>{task.name.toUpperCase()}</h2>
+      <h3>{task.name.toUpperCase()}</h3>
       <p className="sub">
-        {cadenceLabel(remaining)}
+        {remaining !== null && cadenceLabel(remaining)}
         {willMiss > 0 && <span className="risk"> · WILL MISS {willMiss}</span>}
       </p>
       <button
