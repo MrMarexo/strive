@@ -147,10 +147,11 @@ Single screen, retro old-school video game / terminal aesthetic.
 - Text progress bar of 20 cells using `▓` (filled) and `░` (empty) proportional to `progress`, followed by `N TO <NEXT RANK>` (or `MAX RANK` at the top).
 - `WEEK N` (the app-week number).
 
-**Task grid** — split into three titled sections, each with a one-line dim hint and its own responsive grid (1 column on phone, 2 on tablet, 4 on desktop). The section comes from `taskGroup(task)`:
-- `DAILY` (daily tasks): `EVERY DAY · +1 WHEN DONE · -2 IF MISSED`
-- `WEEKLY` (weekly, max once per day): `ONCE A DAY AT MOST · +1 EACH · -2 PER SESSION SHORT ON SUNDAY`
-- `WEEKLY · NO DAY LIMIT` (weekly, unlimited per day): `AS MANY A DAY AS YOU LIKE · +1 EACH UP TO TARGET · -2 PER SESSION SHORT ON SUNDAY`
+**Task grid** — split into three titled sections, each with its own responsive grid (1 column on phone, 2 on tablet, 4 on desktop). The section comes from `taskGroup(task)`: `DAILY` (daily tasks), `WEEKLY` (weekly, max once per day), `WEEKLY · NO DAY LIMIT` (weekly, unlimited per day).
+- Each section title has a `[?]` button that opens a modal popup: the section name as title, a `[ X ]` close button, and the explanation below. Esc, a click outside, or `[ X ]` closes it. Focus moves to `[ X ]` on open and back to `[?]` on close.
+  - DAILY: "Do each of these once every day. Done: +1 point at midnight. Missed: -2 points at midnight."
+  - WEEKLY: "Each has a weekly target (e.g. Coding 5×) and counts at most once per day. +1 point per session at midnight. On Sunday night, -2 for every session short of the target."
+  - WEEKLY · NO DAY LIMIT: "A weekly target you can log several times a day (e.g. 3 chores today). +1 point per session up to the target; extras earn nothing. On Sunday night, -2 for every session short of the target."
 
 **TaskCard** (maxPerDay = 1)
 - 10×10 pixel sprite, task name, subtitle: empty for daily tasks (the section heading says it), otherwise `N LEFT THIS WEEK` / `TARGET MET`, plus a `WILL MISS N` label when applicable.

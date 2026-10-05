@@ -154,24 +154,61 @@ a.rank:focus-visible {
   margin-bottom: 28px;
 }
 
-.group-title {
+.group-head {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 28px;
-  font-weight: normal;
-  letter-spacing: 2px;
+  margin-bottom: 12px;
 }
 
-.group-title::after {
+.group-head::after {
   content: '';
   flex: 1;
   border-top: 2px solid var(--dim);
 }
 
-.group-hint {
-  color: var(--dim);
-  margin: 2px 0 12px;
+.group-title {
+  font-size: 28px;
+  font-weight: normal;
+  letter-spacing: 2px;
+}
+
+.info-btn {
+  padding: 0 6px;
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.dialog {
+  width: 100%;
+  max-width: 440px;
+  padding: 16px 20px 20px;
+  background: var(--bg);
+  border: var(--border);
+  box-shadow: 6px 6px 0 var(--dim);
+}
+
+.dialog-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.dialog-title {
+  font-size: 28px;
+  font-weight: normal;
+  letter-spacing: 2px;
 }
 
 .grid {
