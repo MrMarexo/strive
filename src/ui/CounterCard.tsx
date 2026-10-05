@@ -2,10 +2,10 @@ import { IMAGE_LIBRARY } from './images';
 import { PixelSprite } from './PixelSprite';
 import { CardSubtitle, CardTop, type CardProps } from './TaskCard';
 
-export function CounterCard({ task, status, todayCount, remaining, willMiss, onComplete, onUndo, onInfo }: CardProps) {
+export function CounterCard({ task, status, todayCount, remaining, willMiss, onComplete, onUndo, onInfo, onEdit }: CardProps) {
   return (
     <article className={status === 'pending' ? 'card card-pending' : 'card'} aria-label={task.name}>
-      <CardTop task={task} onInfo={onInfo} />
+      <CardTop task={task} onInfo={onInfo} onEdit={onEdit} />
       <PixelSprite map={IMAGE_LIBRARY[task.image]} title={task.name} />
       <h3>{task.name.toUpperCase()}</h3>
       <CardSubtitle status={status} remaining={remaining} willMiss={willMiss} />

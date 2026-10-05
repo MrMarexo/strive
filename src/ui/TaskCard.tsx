@@ -13,13 +13,17 @@ export interface CardProps {
   onComplete: () => void;
   onUndo: () => void;
   onInfo: (event: MouseEvent<HTMLButtonElement>) => void;
+  onEdit: (event: MouseEvent<HTMLButtonElement>) => void;
 }
 
-export function CardTop({ task, onInfo }: Pick<CardProps, 'task' | 'onInfo'>) {
+export function CardTop({ task, onInfo, onEdit }: Pick<CardProps, 'task' | 'onInfo' | 'onEdit'>) {
   return (
     <div className="card-tools">
       <button type="button" className="btn tool-btn" aria-label={`About ${task.name}`} onClick={onInfo}>
         [?]
+      </button>
+      <button type="button" className="btn tool-btn" aria-label={`Edit ${task.name}`} onClick={onEdit}>
+        [...]
       </button>
     </div>
   );
@@ -37,11 +41,11 @@ export function CardSubtitle({ status, remaining, willMiss }: Pick<CardProps, 's
   );
 }
 
-export function TaskCard({ task, status, todayCount, remaining, willMiss, onComplete, onUndo, onInfo }: CardProps) {
+export function TaskCard({ task, status, todayCount, remaining, willMiss, onComplete, onUndo, onInfo, onEdit }: CardProps) {
   const done = todayCount > 0;
   return (
     <article className={status === 'pending' ? 'card card-pending' : 'card'} aria-label={task.name}>
-      <CardTop task={task} onInfo={onInfo} />
+      <CardTop task={task} onInfo={onInfo} onEdit={onEdit} />
       <PixelSprite map={IMAGE_LIBRARY[task.image]} title={task.name} />
       <h3>{task.name.toUpperCase()}</h3>
       <CardSubtitle status={status} remaining={remaining} willMiss={willMiss} />

@@ -1,8 +1,11 @@
 import { useRef, useState, type MouseEvent } from 'react';
+import type { NewTaskInput, TaskEdit } from '../domain/actions';
 import type { DateKey } from '../domain/dates';
 import { remainingThisWeek, todayCount, willMiss } from '../domain/selectors';
 import { findTask, taskGroup, taskStatus, type TaskDef, type TaskGroup, type TaskId } from '../domain/tasks';
 import type { AppState } from '../domain/types';
+import { AddCard, NEW_TITLES } from './AddCard';
+import { TaskForm } from './TaskForm';
 import { CounterCard } from './CounterCard';
 import { Modal } from './Modal';
 import { TaskCard, type CardProps } from './TaskCard';
@@ -12,6 +15,10 @@ interface TaskGridProps {
   today: DateKey;
   onComplete: (id: TaskId) => void;
   onUndo: (id: TaskId) => void;
+  onAddTask: (input: NewTaskInput) => void;
+  onEditTask: (id: TaskId, edit: TaskEdit) => void;
+  onRemoveTask: (id: TaskId) => void;
+  onUndoRemove: (id: TaskId) => void;
 }
 
 const GROUPS: { id: TaskGroup; title: string; info: string }[] = [
@@ -36,9 +43,22 @@ const GROUPS: { id: TaskGroup; title: string; info: string }[] = [
   },
 ];
 
-type OpenModal = { kind: 'group'; group: TaskGroup } | { kind: 'task'; id: TaskId };
+type OpenModal =
+  | { kind: 'group'; group: TaskGroup }
+  | { kind: 'task'; id: TaskId }
+  | { kind: 'add'; group: TaskGroup }
+  | { kind: 'edit'; id: TaskId };
 
-export function TaskGrid({ state, today, onComplete, onUndo }: TaskGridProps) {
+export function TaskGrid({
+  state,
+  today,
+  onComplete,
+  onUndo,
+  onAddTask,
+  onEditTask,
+  onRemoveTask,
+  onUndoRemove,
+}: TaskGridProps) {
   const [modal, setModal] = useState<OpenModal | null>(null);
   const opener = useRef<HTMLElement | null>(null);
 
@@ -62,6 +82,7 @@ export function TaskGrid({ state, today, onComplete, onUndo }: TaskGridProps) {
       onComplete: () => onComplete(task.id),
       onUndo: () => onUndo(task.id),
       onInfo: open({ kind: 'task', id: task.id }),
+      onEdit: open({ kind: 'edit', id: task.id }),
     };
     return task.maxPerDay === null ? (
       <CounterCard key={task.id} {...props} />
@@ -80,11 +101,49 @@ export function TaskGrid({ state, today, onComplete, onUndo }: TaskGridProps) {
         </Modal>
       );
     }
+    if (modal.kind === 'add') {
+      const group = modal.group;
+      return (
+        <Modal title={NEW_TITLES[group]} onClose={close}>
+          <TaskForm
+            group={group}
+            today={today}
+            onSubmit={(values) => {
+              onAddTask({ group, ...values });
+              close();
+            }}
+          />
+        </Modal>
+      );
+    }
     const task = findTask(state.tasks, modal.id);
     if (!task) return null;
+    if (modal.kind === 'task') {
+      return (
+        <Modal title={task.name.toUpperCase()} onClose={close}>
+          <p>{task.description || 'No description yet.'}</p>
+        </Modal>
+      );
+    }
     return (
-      <Modal title={task.name.toUpperCase()} onClose={close}>
-        <p>{task.description || 'No description yet.'}</p>
+      <Modal title="EDIT TASK" onClose={close}>
+        <TaskForm
+          group={taskGroup(task)}
+          today={today}
+          task={task}
+          onSubmit={({ name, description, image }) => {
+            onEditTask(task.id, { name, description, image });
+            close();
+          }}
+          onRemove={() => {
+            onRemoveTask(task.id);
+            close();
+          }}
+          onUndoRemove={() => {
+            onUndoRemove(task.id);
+            close();
+          }}
+        />
       </Modal>
     );
   };
@@ -93,7 +152,6 @@ export function TaskGrid({ state, today, onComplete, onUndo }: TaskGridProps) {
     <>
       {GROUPS.map((group) => {
         const tasks = state.tasks.filter((task) => taskGroup(task) === group.id);
-        if (tasks.length === 0) return null;
         return (
           <section key={group.id} className="task-group" aria-labelledby={`group-${group.id}`}>
             <div className="group-head">
@@ -109,7 +167,10 @@ export function TaskGrid({ state, today, onComplete, onUndo }: TaskGridProps) {
                 [?]
               </button>
             </div>
-            <div className="grid">{tasks.map(renderCard)}</div>
+            <div className="grid">
+              {tasks.map(renderCard)}
+              <AddCard group={group.id} onClick={open({ kind: 'add', group: group.id })} />
+            </div>
           </section>
         );
       })}

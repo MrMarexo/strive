@@ -7,7 +7,7 @@ import { RankPage } from './ui/RankPage';
 import { TaskGrid } from './ui/TaskGrid';
 
 export default function App() {
-  const { state, today, complete, undo, rename } = useAppState();
+  const { state, today, complete, undo, rename, addTask, editTask, removeTask, undoRemove } = useAppState();
   const route = parseRoute(useHash());
 
   if (route.page === 'rank') {
@@ -28,7 +28,16 @@ export default function App() {
         weekNumber={state.weekNumber}
         onRename={rename}
       />
-      <TaskGrid state={state} today={today} onComplete={complete} onUndo={undo} />
+      <TaskGrid
+        state={state}
+        today={today}
+        onComplete={complete}
+        onUndo={undo}
+        onAddTask={addTask}
+        onEditTask={editTask}
+        onRemoveTask={removeTask}
+        onUndoRemove={undoRemove}
+      />
     </main>
   );
 }

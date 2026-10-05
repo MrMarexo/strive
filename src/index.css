@@ -382,10 +382,6 @@ a.rank:focus-visible {
   pointer-events: auto;
 }
 
-.tool-btn:only-child {
-  margin-right: auto;
-}
-
 .card-pending {
   border-color: var(--dim);
   color: var(--dim);
@@ -398,4 +394,95 @@ a.rank:focus-visible {
 .starts {
   margin-top: auto;
   letter-spacing: 2px;
+}
+
+.add-card {
+  font: inherit;
+  color: var(--dim);
+  background: var(--bg);
+  border: 2px dashed var(--dim);
+  justify-content: center;
+  cursor: pointer;
+  min-height: 200px;
+}
+
+.add-card:hover,
+.add-card:focus-visible {
+  color: var(--fg);
+  border-color: var(--fg);
+  outline: none;
+}
+
+.add-plus {
+  font-size: 64px;
+  line-height: 1;
+}
+
+.task-form {
+  display: grid;
+  gap: 12px;
+}
+
+.field {
+  display: grid;
+  gap: 4px;
+  border: none;
+}
+
+.field > span:first-child,
+.field > legend {
+  color: var(--dim);
+}
+
+.field input,
+.field textarea {
+  font: inherit;
+  color: var(--fg);
+  background: var(--bg);
+  border: var(--border);
+  padding: 4px 8px;
+}
+
+.field textarea {
+  resize: vertical;
+}
+
+.target input {
+  width: 4em;
+}
+
+.image-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+  gap: 6px;
+}
+
+.image-option {
+  display: grid;
+  place-items: center;
+  padding: 4px;
+}
+
+.option-sprite {
+  fill: currentColor;
+}
+
+.image-option.selected {
+  background: var(--fg);
+  color: var(--bg);
+}
+
+.note {
+  color: var(--dim);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dialog {
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
 }
