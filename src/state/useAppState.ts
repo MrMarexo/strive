@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useReducer } from 'react';
-import { complete, rename, undo } from '../domain/actions';
+import {
+  addTask, complete, editTask, removeTask, rename, undo, undoRemove,
+  type NewTaskInput, type TaskEdit,
+} from '../domain/actions';
 import { toKey, type DateKey } from '../domain/dates';
 import { settle } from '../domain/settle';
 import type { TaskId } from '../domain/tasks';
@@ -10,7 +13,10 @@ type Action =
   | { type: 'settle'; today: DateKey }
   | { type: 'replace'; state: AppState; today: DateKey }
   | { type: 'complete' | 'undo'; id: TaskId; today: DateKey }
-  | { type: 'rename'; name: string; today: DateKey };
+  | { type: 'rename'; name: string; today: DateKey }
+  | { type: 'addTask'; input: NewTaskInput; id: TaskId; today: DateKey }
+  | { type: 'editTask'; id: TaskId; edit: TaskEdit; today: DateKey }
+  | { type: 'removeTask' | 'undoRemove'; id: TaskId; today: DateKey };
 
 function reducer(state: AppState, action: Action): AppState {
   const settled = settle(state, action.today);
@@ -25,10 +31,21 @@ function reducer(state: AppState, action: Action): AppState {
       return undo(settled, action.id, action.today);
     case 'rename':
       return rename(settled, action.name);
+    case 'addTask':
+      return addTask(settled, action.input, action.today, action.id);
+    case 'editTask':
+      return editTask(settled, action.id, action.edit);
+    case 'removeTask':
+      return removeTask(settled, action.id, action.today);
+    case 'undoRemove':
+      return undoRemove(settled, action.id);
   }
 }
 
 const currentKey = () => toKey(new Date());
+
+// Generated outside the reducer so StrictMode's double-run sees the same id.
+const newTaskId = () => `t-${crypto.randomUUID().replace(/-/g, '').slice(0, 8)}`;
 
 function init(): AppState {
   const today = currentKey();
@@ -83,5 +100,26 @@ export function useAppState() {
 
   const renamePlayer = useCallback((name: string) => dispatch({ type: 'rename', name, today: currentKey() }), []);
 
-  return { state, today: currentKey(), complete: completeTask, undo: undoTask, rename: renamePlayer };
+  const addNewTask = useCallback(
+    (input: NewTaskInput) => dispatch({ type: 'addTask', input, id: newTaskId(), today: currentKey() }),
+    [],
+  );
+  const editExistingTask = useCallback(
+    (id: TaskId, edit: TaskEdit) => dispatch({ type: 'editTask', id, edit, today: currentKey() }),
+    [],
+  );
+  const removeExistingTask = useCallback((id: TaskId) => dispatch({ type: 'removeTask', id, today: currentKey() }), []);
+  const undoTaskRemoval = useCallback((id: TaskId) => dispatch({ type: 'undoRemove', id, today: currentKey() }), []);
+
+  return {
+    state,
+    today: currentKey(),
+    complete: completeTask,
+    undo: undoTask,
+    rename: renamePlayer,
+    addTask: addNewTask,
+    editTask: editExistingTask,
+    removeTask: removeExistingTask,
+    undoRemove: undoTaskRemoval,
+  };
 }

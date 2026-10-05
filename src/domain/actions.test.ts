@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { complete, rename, undo } from './actions';
+import { addTask, complete, editTask, firstStartDay, removeTask, rename, undo, undoRemove } from './actions';
 import type { AppState } from './types';
 import { seedTasks } from './tasks';
 
@@ -75,5 +75,62 @@ describe('inactive tasks', () => {
     expect(complete(s, 't-later', TODAY)).toBe(s);
     expect(complete(s, 'nope', TODAY)).toBe(s);
     expect(undo(s, 't-later', TODAY)).toBe(s);
+  });
+});
+
+describe('task management', () => {
+  const input = { group: 'weekly' as const, name: '  Guitar  ', description: ' Practise chords. ', image: 'guitar', target: 3 };
+
+  it('starts new tasks next Monday, or today on a Monday', () => {
+    expect(firstStartDay('2026-09-30')).toBe('2026-10-05');
+    expect(firstStartDay('2026-10-04')).toBe('2026-10-05');
+    expect(firstStartDay('2026-10-05')).toBe('2026-10-05');
+  });
+
+  it('adds a cleaned-up task for its section', () => {
+    const next = addTask(state(), input, TODAY, 't-1');
+    expect(next.tasks.at(-1)).toEqual({
+      id: 't-1', name: 'Guitar', description: 'Practise chords.', image: 'guitar',
+      cadence: { kind: 'weekly', target: 3 }, maxPerDay: 1, startsOn: '2026-10-05', retiresAfter: null,
+    });
+    expect(addTask(state(), { ...input, group: 'daily' }, TODAY, 't-2').tasks.at(-1)).toMatchObject({
+      cadence: { kind: 'daily' }, maxPerDay: 1,
+    });
+    expect(addTask(state(), { ...input, group: 'weekly-unlimited' }, TODAY, 't-3').tasks.at(-1)).toMatchObject({
+      cadence: { kind: 'weekly', target: 3 }, maxPerDay: null,
+    });
+  });
+
+  it('rejects empty names and duplicate ids, clamps targets and falls back on unknown images', () => {
+    const s = state();
+    expect(addTask(s, { ...input, name: '   ' }, TODAY, 't-1')).toBe(s);
+    expect(addTask(s, input, TODAY, 'reading')).toBe(s);
+    expect(addTask(s, { ...input, target: 99 }, TODAY, 't-1').tasks.at(-1)?.cadence).toEqual({ kind: 'weekly', target: 7 });
+    expect(addTask(s, { ...input, group: 'weekly-unlimited', target: 99 }, TODAY, 't-1').tasks.at(-1)?.cadence)
+      .toEqual({ kind: 'weekly', target: 30 });
+    expect(addTask(s, { ...input, target: Number.NaN }, TODAY, 't-1').tasks.at(-1)?.cadence).toEqual({ kind: 'weekly', target: 3 });
+    expect(addTask(s, { ...input, image: 'dragon' }, TODAY, 't-1').tasks.at(-1)?.image).toBe('book');
+    expect(addTask(s, { ...input, name: 'x'.repeat(30) }, TODAY, 't-1').tasks.at(-1)?.name).toHaveLength(24);
+  });
+
+  it('edits only the name, description and image', () => {
+    const next = editTask(state(), 'coding', { name: ' Deep work ', description: 'Focus.', image: 'pen' });
+    expect(next.tasks.find((t) => t.id === 'coding')).toMatchObject({
+      name: 'Deep work', description: 'Focus.', image: 'pen', cadence: { kind: 'weekly', target: 5 },
+    });
+    const s = state();
+    expect(editTask(s, 'coding', { name: '', description: '', image: 'pen' })).toBe(s);
+    expect(editTask(s, 'nope', { name: 'X', description: '', image: 'pen' })).toBe(s);
+  });
+
+  it('retires a started task at the end of the week and can undo it', () => {
+    const removed = removeTask(state(), 'coding', TODAY);
+    expect(removed.tasks.find((t) => t.id === 'coding')?.retiresAfter).toBe('2026-10-04');
+    expect(undoRemove(removed, 'coding').tasks.find((t) => t.id === 'coding')?.retiresAfter).toBeNull();
+  });
+
+  it('deletes a task that has not started yet straight away', () => {
+    const added = addTask(state(), input, TODAY, 't-1');
+    expect(removeTask(added, 't-1', TODAY).tasks.map((t) => t.id)).not.toContain('t-1');
   });
 });

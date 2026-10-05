@@ -99,4 +99,25 @@ describe('useAppState', () => {
     expect(result.current.state.playerName).toBe('Aragorn');
     expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).playerName).toBe('Aragorn');
   });
+
+  it('adds, edits, removes and restores tasks with generated ids', () => {
+    vi.setSystemTime(new Date(2026, 8, 30, 10, 0));
+    seed({ version: 1, points: 0, graceWeek: '2026-09-28', weekNumber: 1, playerName: 'no_name', lastSettledDate: '2026-09-29', completions: {} });
+    const { result } = renderHook(() => useAppState());
+
+    act(() => result.current.addTask({ group: 'daily', name: 'Meditate', description: '', image: 'lotus' }));
+    act(() => result.current.addTask({ group: 'daily', name: 'Meditate', description: '', image: 'lotus' }));
+    const added = result.current.state.tasks.slice(-2);
+    expect(added[0].id).toMatch(/^t-[0-9a-f]{8}$/);
+    expect(added[0].id).not.toBe(added[1].id);
+
+    act(() => result.current.editTask('reading', { name: 'Books', description: 'Read.', image: 'book' }));
+    act(() => result.current.removeTask('coding'));
+    expect(result.current.state.tasks.find((t) => t.id === 'reading')?.name).toBe('Books');
+    expect(result.current.state.tasks.find((t) => t.id === 'coding')?.retiresAfter).toBe('2026-10-04');
+
+    act(() => result.current.undoRemove('coding'));
+    expect(result.current.state.tasks.find((t) => t.id === 'coding')?.retiresAfter).toBeNull();
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).tasks).toHaveLength(10);
+  });
 });
