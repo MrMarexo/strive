@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { DateKey } from '../domain/dates';
 import { IMAGE_KEYS } from '../domain/imageKeys';
 import type { CustomImage } from '../domain/images';
@@ -30,7 +30,24 @@ export function TaskFormDialog({
 }: TaskFormDialogProps) {
   const [image, setImage] = useState(task?.image ?? IMAGE_KEYS[0]);
   const [editor, setEditor] = useState<{ key?: string } | null>(null);
+  const opener = useRef<HTMLElement | null>(null);
+  const formRef = useRef<HTMLDivElement>(null);
   const backToForm = () => setEditor(null);
+  const openEditor = (next: { key?: string }) => {
+    opener.current = document.activeElement as HTMLElement | null;
+    setEditor(next);
+  };
+
+  // Back on the form: return focus to the button that opened the editor, or to the
+  // selected tile if that button is gone (e.g. after deleting the image).
+  useEffect(() => {
+    if (editor !== null || !opener.current) return;
+    const target = opener.current.isConnected
+      ? opener.current
+      : formRef.current?.querySelector<HTMLElement>('.image-option.selected');
+    opener.current = null;
+    target?.focus();
+  }, [editor]);
   const editing = editor?.key ? customImages.find((custom) => custom.key === editor.key) : undefined;
   const sources = [
     ...IMAGE_KEYS.map((key) => ({ key, label: key, map: IMAGE_LIBRARY[key] })),
@@ -40,7 +57,7 @@ export function TaskFormDialog({
   return (
     <Modal title={editor ? (editor.key ? 'EDIT IMAGE' : 'NEW IMAGE') : title} onClose={editor ? backToForm : onClose}>
       {/* Hidden, not unmounted, so typed values survive a trip to the editor. */}
-      <div hidden={editor !== null}>
+      <div ref={formRef} hidden={editor !== null}>
         <TaskForm
           group={group}
           today={today}
@@ -48,8 +65,8 @@ export function TaskFormDialog({
           image={image}
           onImageChange={setImage}
           customImages={customImages}
-          onDraw={() => setEditor({})}
-          onEditImage={(key) => setEditor({ key })}
+          onDraw={() => openEditor({})}
+          onEditImage={(key) => openEditor({ key })}
           onSubmit={onSubmit}
           onRemove={onRemove}
           onUndoRemove={onUndoRemove}

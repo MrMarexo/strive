@@ -379,4 +379,31 @@ describe('App', () => {
     expect(within(form).getByRole('button', { name: 'book' })).toHaveAttribute('aria-pressed', 'true');
     expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).customImages).toEqual([]);
   });
+
+  it('moves keyboard focus into the editor and back to the button that opened it', () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: 'ADD DAILY TASK' }));
+    const draw = screen.getByRole('button', { name: 'Draw a new image' });
+    draw.focus();
+    fireEvent.click(draw);
+    expect(screen.getByRole('button', { name: 'Pixel row 1, column 1, empty' })).toHaveFocus();
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screen.getByRole('button', { name: 'Draw a new image' })).toHaveFocus();
+  });
+
+  it('focuses the selected image tile when the opening button is gone', () => {
+    const map = ['##########', ...Array(9).fill('..........')];
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ ...freshState('2026-09-30'), tasks: seedTasks('2026-09-28'), customImages: [{ key: 'c-0000000a', map }] }),
+    );
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: 'ADD DAILY TASK' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Custom image 1' }));
+    const edit = screen.getByRole('button', { name: '[ EDIT IMAGE ]' });
+    edit.focus();
+    fireEvent.click(edit);
+    fireEvent.click(screen.getByRole('button', { name: '[ DELETE ]' }));
+    expect(screen.getByRole('button', { name: 'book' })).toHaveFocus();
+  });
 });

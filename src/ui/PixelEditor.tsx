@@ -59,6 +59,11 @@ export function PixelEditor({ initial, images, usedBy, onSave, onCancel, onDelet
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
+  // Opening the editor hides the button that opened it, so move focus onto the grid.
+  useEffect(() => {
+    cells.current[0]?.focus();
+  }, []);
+
   useEffect(() => {
     if (!keyboardMove.current) return;
     keyboardMove.current = false;

@@ -10,6 +10,7 @@ export function Modal({ title, onClose, children }: ModalProps) {
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
   const onCloseRef = useRef(onClose);
+  const pressInside = useRef(false);
 
   useEffect(() => {
     onCloseRef.current = onClose;
@@ -26,7 +27,18 @@ export function Modal({ title, onClose, children }: ModalProps) {
   }, []);
 
   return (
-    <div className="backdrop" onClick={onClose}>
+    // A click outside closes only if the press also started outside: a drag that begins on
+    // the editor grid and ends on the backdrop must not discard the drawing.
+    <div
+      className="backdrop"
+      onPointerDown={(event) => {
+        pressInside.current = event.target !== event.currentTarget;
+      }}
+      onClick={() => {
+        if (!pressInside.current) onClose();
+        pressInside.current = false;
+      }}
+    >
       <div
         className="dialog"
         role="dialog"

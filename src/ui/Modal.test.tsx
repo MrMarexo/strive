@@ -24,4 +24,16 @@ describe('Modal', () => {
     rerender(<Modal title="FORM" onClose={() => {}}><input aria-label="Field" /></Modal>);
     expect(field).toHaveFocus();
   });
+
+  it('stays open when a press starts inside and is released outside (e.g. a drag)', () => {
+    const onClose = vi.fn();
+    render(<Modal title="DRAW" onClose={onClose}><p>Body</p></Modal>);
+    const dialog = screen.getByRole('dialog', { name: 'DRAW' });
+    fireEvent.pointerDown(dialog);
+    fireEvent.click(dialog.parentElement!);
+    expect(onClose).not.toHaveBeenCalled();
+    fireEvent.pointerDown(dialog.parentElement!);
+    fireEvent.click(dialog.parentElement!);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
 });

@@ -67,6 +67,8 @@ customImages: CustomImage[]; // creation order
   - The Modal's close action (Esc, backdrop, `[ X ]`) returns to the form instead of closing the popup.
 - **Save image:** a new image is added and selected; an edited image is updated. Then back to the form.
 - **Delete:** the image is deleted. If it was selected, the selection falls back to `IMAGE_KEYS[0]`. Then back to the form.
+- **Focus:** opening the editor focuses the tabbable pixel. Returning to the form focuses the button that opened the editor, or the selected image tile if that button is gone.
+- **Backdrop:** a click outside closes the popup (or returns to the form) only if the press also started outside, so a drag released past the dialog edge keeps the drawing.
 
 **`PixelEditor`** (the editor view):
 - **Grid:** a 10×10 grid of pixel buttons (28px cells, dim grid lines, filled cells in the primary colour). `touch-action: none` on the grid.
