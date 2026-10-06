@@ -7,6 +7,7 @@ import type { AppState } from '../domain/types';
 import { AddCard, NEW_TITLES } from './AddCard';
 import { TaskForm } from './TaskForm';
 import { CounterCard } from './CounterCard';
+import { imageMap } from './images';
 import { Modal } from './Modal';
 import { TaskCard, type CardProps } from './TaskCard';
 
@@ -75,6 +76,7 @@ export function TaskGrid({
     const status = taskStatus(task, today);
     const props: CardProps = {
       task,
+      sprite: imageMap(state.customImages, task.image),
       status,
       todayCount: todayCount(state, task.id, today),
       remaining: status === 'pending' ? null : remainingThisWeek(state, task, today),

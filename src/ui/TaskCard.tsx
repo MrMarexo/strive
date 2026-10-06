@@ -1,11 +1,12 @@
 import type { MouseEvent } from 'react';
 import type { TaskDef, TaskStatus } from '../domain/tasks';
 import { cadenceLabel } from './format';
-import { CHECK, IMAGE_LIBRARY } from './images';
+import { CHECK } from './images';
 import { PixelSprite } from './PixelSprite';
 
 export interface CardProps {
   task: TaskDef;
+  sprite: string[]; // resolved image map
   status: TaskStatus;
   todayCount: number;
   remaining: number | null;
@@ -41,12 +42,12 @@ export function CardSubtitle({ status, remaining, willMiss }: Pick<CardProps, 's
   );
 }
 
-export function TaskCard({ task, status, todayCount, remaining, willMiss, onComplete, onUndo, onInfo, onEdit }: CardProps) {
+export function TaskCard({ task, sprite, status, todayCount, remaining, willMiss, onComplete, onUndo, onInfo, onEdit }: CardProps) {
   const done = todayCount > 0;
   return (
     <article className={status === 'pending' ? 'card card-pending' : 'card'} aria-label={task.name}>
       <CardTop task={task} onInfo={onInfo} onEdit={onEdit} />
-      <PixelSprite map={IMAGE_LIBRARY[task.image]} title={task.name} />
+      <PixelSprite map={sprite} title={task.name} />
       <h3>{task.name.toUpperCase()}</h3>
       <CardSubtitle status={status} remaining={remaining} willMiss={willMiss} />
       {status === 'pending' ? (

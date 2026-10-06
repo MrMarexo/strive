@@ -1,3 +1,5 @@
+import type { CustomImage } from '../domain/images';
+
 // 10x10 task images (# = filled), keyed by image name. Order = picker order (IMAGE_KEYS).
 
 export const IMAGE_LIBRARY: Record<string, string[]> = {
@@ -298,3 +300,7 @@ export const CHECK: string[] = [
   '.#.#...',
   '..#....',
 ];
+
+export function imageMap(customImages: CustomImage[], key: string): string[] {
+  return IMAGE_LIBRARY[key] ?? customImages.find((image) => image.key === key)?.map ?? IMAGE_LIBRARY.book;
+}

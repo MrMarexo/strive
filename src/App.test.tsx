@@ -292,4 +292,16 @@ describe('App', () => {
     expect(within(weekly).getByRole('button', { name: 'ADD WEEKLY TASK' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'ADD NO-LIMIT TASK' })).toBeInTheDocument();
   });
+
+  it('shows a custom image on a task card', () => {
+    const map = ['##########', ...Array(9).fill('..........')];
+    const tasks = seedTasks('2026-09-28').map((t) => (t.id === 'reading' ? { ...t, image: 'c-0000000a' } : t));
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ ...freshState('2026-09-30'), tasks, customImages: [{ key: 'c-0000000a', map }] }),
+    );
+    render(<App />);
+    const card = screen.getByRole('article', { name: 'Reading' });
+    expect(within(card).getByRole('img', { name: 'Reading' }).querySelectorAll('rect')).toHaveLength(10);
+  });
 });
