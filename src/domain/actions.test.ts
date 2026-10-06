@@ -6,7 +6,7 @@ import { seedTasks } from './tasks';
 const TODAY = '2026-09-30';
 
 function state(completions: AppState['completions'] = {}): AppState {
-  return { version: 1, points: 10, lastSettledDate: '2026-09-29', completions, graceWeek: '2026-09-21', weekNumber: 1, playerName: 'no_name', rankDays: {}, tasks: seedTasks('2026-01-05') };
+  return { version: 1, points: 10, lastSettledDate: '2026-09-29', completions, graceWeek: '2026-09-21', weekNumber: 1, playerName: 'no_name', rankDays: {}, tasks: seedTasks('2026-01-05'), customImages: [] };
 }
 
 describe('complete', () => {
@@ -138,5 +138,12 @@ describe('task management', () => {
     const added = addTask(state(), input, TODAY, 't-1');
     const tapped = { ...added, completions: { '2026-10-05': { 't-1': 1, reading: 1 } } };
     expect(removeTask(tapped, 't-1', TODAY).completions).toEqual({ '2026-10-05': { reading: 1 } });
+  });
+
+  it('accepts custom image keys', () => {
+    const s = { ...state(), customImages: [{ key: 'c-0000000a', map: ['##########', ...Array(9).fill('..........')] }] };
+    expect(addTask(s, { ...input, image: 'c-0000000a' }, TODAY, 't-1').tasks.at(-1)?.image).toBe('c-0000000a');
+    expect(editTask(s, 'reading', { name: 'Reading', description: '', image: 'c-0000000a' }).tasks[0].image).toBe('c-0000000a');
+    expect(addTask(s, { ...input, image: 'c-ffffffff' }, TODAY, 't-2').tasks.at(-1)?.image).toBe('book');
   });
 });

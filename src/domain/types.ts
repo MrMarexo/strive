@@ -1,3 +1,4 @@
+import type { CustomImage } from './images';
 import type { DateKey } from './dates';
 import type { TaskDef, TaskId } from './tasks';
 
@@ -13,4 +14,5 @@ export interface AppState {
   playerName: string;
   rankDays: Record<string, number>; // rank title -> settled days spent in that rank
   tasks: TaskDef[]; // the player's tasks, in display order
+  customImages: CustomImage[]; // the player's drawn images, in creation order
 }

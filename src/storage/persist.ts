@@ -2,6 +2,7 @@ import { DEFAULT_PLAYER_NAME, MAX_NAME_LENGTH } from '../domain/actions';
 import { addDays, fromKey, isSunday, mondayOf, toKey, type DateKey } from '../domain/dates';
 import { RANKS } from '../domain/ranks';
 import { IMAGE_KEYS } from '../domain/imageKeys';
+import { CUSTOM_KEY_RE, MAX_CUSTOM_IMAGES, isValidMap } from '../domain/images';
 import { MAX_DESCRIPTION, MAX_TASK_NAME, TARGET_LIMITS, seedTasks, type TaskDef } from '../domain/tasks';
 import type { AppState } from '../domain/types';
 
@@ -23,6 +24,7 @@ export function freshState(today: DateKey): AppState {
     playerName: DEFAULT_PLAYER_NAME,
     rankDays: {},
     tasks: [],
+    customImages: [],
   };
 }
 
@@ -38,20 +40,32 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function isTask(value: unknown): value is TaskDef {
+function isTask(value: unknown, imageKeys: Set<string>): value is TaskDef {
   if (!isPlainObject(value)) return false;
   const { id, name, description, image, cadence, maxPerDay, startsOn, retiresAfter } = value;
   if (!isPlainObject(cadence)) return false;
   if (typeof id !== 'string' || id.length === 0) return false;
   if (typeof name !== 'string' || name.trim().length === 0 || name.length > MAX_TASK_NAME) return false;
   if (typeof description !== 'string' || description.length > MAX_DESCRIPTION) return false;
-  if (typeof image !== 'string' || !IMAGES.has(image)) return false;
+  if (typeof image !== 'string' || !imageKeys.has(image)) return false;
   if (!isDateKey(startsOn)) return false;
   if (retiresAfter !== null && !(isDateKey(retiresAfter) && isSunday(retiresAfter))) return false;
   if (cadence.kind === 'daily') return maxPerDay === 1;
   if (cadence.kind !== 'weekly' || (maxPerDay !== 1 && maxPerDay !== null)) return false;
   const max = maxPerDay === 1 ? TARGET_LIMITS.weekly : TARGET_LIMITS['weekly-unlimited'];
   return isCount(cadence.target) && (cadence.target as number) >= 1 && (cadence.target as number) <= max;
+}
+
+// The set of custom image keys, or null if the list is invalid.
+function customImageKeys(value: unknown): Set<string> | null {
+  if (!Array.isArray(value) || value.length > MAX_CUSTOM_IMAGES) return null;
+  const keys = new Set<string>();
+  for (const image of value) {
+    if (!isPlainObject(image) || typeof image.key !== 'string' || !CUSTOM_KEY_RE.test(image.key)) return null;
+    if (keys.has(image.key) || !isValidMap(image.map)) return null;
+    keys.add(image.key);
+  }
+  return keys;
 }
 
 export function isValidState(value: unknown): value is AppState {
@@ -64,7 +78,10 @@ export function isValidState(value: unknown): value is AppState {
   }
   if (!isPlainObject(value.rankDays)) return false;
   if (!Object.entries(value.rankDays).every(([title, n]) => RANK_TITLES.has(title) && isCount(n))) return false;
-  if (!Array.isArray(value.tasks) || !value.tasks.every(isTask)) return false;
+  const customKeys = customImageKeys(value.customImages);
+  if (!customKeys) return false;
+  const imageKeys = new Set([...IMAGES, ...customKeys]);
+  if (!Array.isArray(value.tasks) || !value.tasks.every((task) => isTask(task, imageKeys))) return false;
   const taskIds = new Set(value.tasks.map((task) => task.id));
   if (taskIds.size !== value.tasks.length) return false;
   if (!isPlainObject(value.completions)) return false;
@@ -76,7 +93,7 @@ export function isValidState(value: unknown): value is AppState {
   );
 }
 
-// Data saved before weekNumber/playerName/rankDays/tasks existed: fill them in. The week number
+// Data saved before weekNumber/playerName/rankDays/tasks/customImages existed: fill them in. The week number
 // counts the Sundays already settled since the first week.
 function migrate(value: unknown): unknown {
   if (!isPlainObject(value) || !isDateKey(value.graceWeek) || !isDateKey(value.lastSettledDate)) return value;
@@ -84,6 +101,7 @@ function migrate(value: unknown): unknown {
   if (migrated.playerName === undefined) migrated.playerName = DEFAULT_PLAYER_NAME;
   if (migrated.rankDays === undefined) migrated.rankDays = {};
   if (migrated.tasks === undefined) migrated.tasks = seedTasks(value.graceWeek);
+  if (migrated.customImages === undefined) migrated.customImages = [];
   if (migrated.weekNumber === undefined) {
     const currentWeek = mondayOf(addDays(value.lastSettledDate, 1));
     let weekNumber = 1;

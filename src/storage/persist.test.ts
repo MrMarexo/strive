@@ -5,6 +5,8 @@ import { seedTasks } from '../domain/tasks';
 
 const TODAY = '2026-09-30';
 
+const BLOCK = ['##########', ...Array.from({ length: 9 }, () => '..........')];
+
 const valid: AppState = {
   version: 1,
   points: 42,
@@ -15,6 +17,7 @@ const valid: AppState = {
   playerName: 'Aragorn',
   rankDays: { Beggar: 2 },
   tasks: seedTasks('2026-09-28'),
+  customImages: [{ key: 'c-0000000a', map: BLOCK }],
 };
 
 describe('persist', () => {
@@ -30,7 +33,7 @@ describe('persist', () => {
   it('creates a fresh state whose first scored day is today', () => {
     expect(freshState(TODAY)).toEqual({
       version: 1, points: 0, lastSettledDate: '2026-09-29', completions: {}, graceWeek: '2026-09-28',
-      weekNumber: 1, playerName: 'no_name', rankDays: {}, tasks: [],
+      weekNumber: 1, playerName: 'no_name', rankDays: {}, tasks: [], customImages: [],
     });
   });
 
@@ -63,6 +66,14 @@ describe('persist', () => {
     ['task target too high', JSON.stringify({ ...valid, tasks: [{ ...seedTasks('2026-09-28')[1], cadence: { kind: 'weekly', target: 8 } }] })],
     ['unknown task image', JSON.stringify({ ...valid, tasks: [{ ...seedTasks('2026-09-28')[0], image: 'dragon' }] })],
     ['retiresAfter not a Sunday', JSON.stringify({ ...valid, tasks: [{ ...seedTasks('2026-09-28')[0], retiresAfter: '2026-10-03' }] })],
+    ['bad custom image key', JSON.stringify({ ...valid, customImages: [{ key: 'x-1', map: BLOCK }] })],
+    ['blank custom image', JSON.stringify({ ...valid, customImages: [{ key: 'c-0000000a', map: Array(10).fill('..........') }] })],
+    ['duplicate custom image key', JSON.stringify({ ...valid, customImages: [{ key: 'c-0000000a', map: BLOCK }, { key: 'c-0000000a', map: BLOCK }] })],
+    ['too many custom images', JSON.stringify({
+      ...valid,
+      customImages: Array.from({ length: 101 }, (_, i) => ({ key: `c-${i.toString(16).padStart(8, '0')}`, map: BLOCK })),
+    })],
+    ['task using an unknown custom image', JSON.stringify({ ...valid, tasks: [{ ...seedTasks('2026-09-28')[0], image: 'c-ffffffff' }] })],
     ['impossible calendar date', JSON.stringify({ ...valid, lastSettledDate: '2026-13-45' })],
     ['missing graceWeek', JSON.stringify({ ...valid, graceWeek: undefined })],
     ['fractional count', JSON.stringify({ ...valid, completions: { '2026-09-30': { reading: 0.5 } } })],
@@ -108,10 +119,10 @@ describe('persist', () => {
     expect(load(TODAY)).toEqual(drifted);
   });
   it('migrates data saved before names and week numbers existed', () => {
-    const { weekNumber: _w, playerName: _p, rankDays: _r, tasks: _t, ...old } = { ...valid, graceWeek: '2026-09-21' };
+    const { weekNumber: _w, playerName: _p, rankDays: _r, tasks: _t, customImages: _c, ...old } = { ...valid, graceWeek: '2026-09-21' };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(old));
     expect(load(TODAY)).toEqual({
-      ...old, weekNumber: 2, playerName: 'no_name', rankDays: {}, tasks: seedTasks('2026-09-21'),
+      ...old, weekNumber: 2, playerName: 'no_name', rankDays: {}, tasks: seedTasks('2026-09-21'), customImages: [],
     });
   });
 
@@ -127,5 +138,11 @@ describe('persist', () => {
     expect(loadStored(TODAY)).toBeNull();
     save(valid);
     expect(loadStored(TODAY)).toEqual(valid);
+  });
+
+  it('keeps a task that uses a custom image', () => {
+    const withCustom = { ...valid, tasks: [{ ...seedTasks('2026-09-28')[0], image: 'c-0000000a' }], completions: {} };
+    save(withCustom);
+    expect(load(TODAY)).toEqual(withCustom);
   });
 });

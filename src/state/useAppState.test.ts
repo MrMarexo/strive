@@ -143,4 +143,29 @@ describe('useAppState', () => {
       Object.defineProperty(crypto, 'randomUUID', { value: original, configurable: true });
     }
   });
+
+  it('adds, updates and deletes custom images', () => {
+    vi.setSystemTime(new Date(2026, 8, 30, 10, 0));
+    seed({ version: 1, points: 0, graceWeek: '2026-09-28', weekNumber: 1, playerName: 'no_name', lastSettledDate: '2026-09-29', completions: {} });
+    const { result } = renderHook(() => useAppState());
+    const map = ['##########', ...Array(9).fill('..........')];
+    let key = '';
+    act(() => {
+      key = result.current.addImage(map);
+    });
+    expect(key).toMatch(/^c-[0-9a-f]{8}$/);
+    expect(result.current.state.customImages).toEqual([{ key, map }]);
+
+    const dot = ['#.........', ...Array(9).fill('..........')];
+    act(() => result.current.updateImage(key, dot));
+    expect(result.current.state.customImages[0].map).toEqual(dot);
+
+    act(() => result.current.editTask('reading', { name: 'Reading', description: '', image: key }));
+    act(() => result.current.deleteImage(key));
+    expect(result.current.state.customImages).toHaveLength(1);
+    act(() => result.current.editTask('reading', { name: 'Reading', description: '', image: 'book' }));
+    act(() => result.current.deleteImage(key));
+    expect(result.current.state.customImages).toEqual([]);
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).customImages).toEqual([]);
+  });
 });

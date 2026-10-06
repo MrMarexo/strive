@@ -4,6 +4,7 @@ import {
   type NewTaskInput, type TaskEdit,
 } from '../domain/actions';
 import { toKey, type DateKey } from '../domain/dates';
+import { addImage, deleteImage, updateImage } from '../domain/images';
 import { settle } from '../domain/settle';
 import type { TaskId } from '../domain/tasks';
 import type { AppState } from '../domain/types';
@@ -16,7 +17,10 @@ type Action =
   | { type: 'rename'; name: string; today: DateKey }
   | { type: 'addTask'; input: NewTaskInput; id: TaskId; today: DateKey }
   | { type: 'editTask'; id: TaskId; edit: TaskEdit; today: DateKey }
-  | { type: 'removeTask' | 'undoRemove'; id: TaskId; today: DateKey };
+  | { type: 'removeTask' | 'undoRemove'; id: TaskId; today: DateKey }
+  | { type: 'addImage'; map: string[]; key: string; today: DateKey }
+  | { type: 'updateImage'; key: string; map: string[]; today: DateKey }
+  | { type: 'deleteImage'; key: string; today: DateKey };
 
 function reducer(state: AppState, action: Action): AppState {
   const settled = settle(state, action.today);
@@ -39,17 +43,22 @@ function reducer(state: AppState, action: Action): AppState {
       return removeTask(settled, action.id, action.today);
     case 'undoRemove':
       return undoRemove(settled, action.id);
+    case 'addImage':
+      return addImage(settled, action.map, action.key);
+    case 'updateImage':
+      return updateImage(settled, action.key, action.map);
+    case 'deleteImage':
+      return deleteImage(settled, action.key);
   }
 }
 
 const currentKey = () => toKey(new Date());
 
-// Generated outside the reducer so StrictMode's double-run sees the same id.
+// Ids are generated outside the reducer so StrictMode's double-run sees the same one.
 // getRandomValues (unlike randomUUID) also works on plain-HTTP pages, e.g. the dev server opened from a phone.
-const newTaskId = () => {
-  const bytes = crypto.getRandomValues(new Uint8Array(4));
-  return `t-${Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')}`;
-};
+const randomHex = () => Array.from(crypto.getRandomValues(new Uint8Array(4)), (b) => b.toString(16).padStart(2, '0')).join('');
+const newTaskId = () => `t-${randomHex()}`;
+const newImageKey = () => `c-${randomHex()}`;
 
 function init(): AppState {
   const today = currentKey();
@@ -117,6 +126,17 @@ export function useAppState() {
   const removeExistingTask = useCallback((id: TaskId) => dispatch({ type: 'removeTask', id, today: currentKey() }), []);
   const undoTaskRemoval = useCallback((id: TaskId) => dispatch({ type: 'undoRemove', id, today: currentKey() }), []);
 
+  const addNewImage = useCallback((map: string[]) => {
+    const key = newImageKey();
+    dispatch({ type: 'addImage', map, key, today: currentKey() });
+    return key;
+  }, []);
+  const updateExistingImage = useCallback(
+    (key: string, map: string[]) => dispatch({ type: 'updateImage', key, map, today: currentKey() }),
+    [],
+  );
+  const deleteExistingImage = useCallback((key: string) => dispatch({ type: 'deleteImage', key, today: currentKey() }), []);
+
   return {
     state,
     today: currentKey(),
@@ -127,5 +147,8 @@ export function useAppState() {
     editTask: editExistingTask,
     removeTask: removeExistingTask,
     undoRemove: undoTaskRemoval,
+    addImage: addNewImage,
+    updateImage: updateExistingImage,
+    deleteImage: deleteExistingImage,
   };
 }

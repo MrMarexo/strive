@@ -1,6 +1,7 @@
 import { countOn } from './counts';
 import { addDays, dayOfWeek, mondayOf, type DateKey } from './dates';
 import { IMAGE_KEYS } from './imageKeys';
+import { isImageKey } from './images';
 import {
   MAX_DESCRIPTION, MAX_TASK_NAME, TARGET_LIMITS, findTask, isActive,
   type TaskDef, type TaskGroup, type TaskId,
@@ -70,7 +71,7 @@ const DEFAULT_TARGET = 3;
 
 const cleanName = (name: string) => name.trim().slice(0, MAX_TASK_NAME).trim();
 const cleanDescription = (text: string) => text.trim().slice(0, MAX_DESCRIPTION);
-const cleanImage = (image: string) => (IMAGE_KEYS.includes(image) ? image : IMAGE_KEYS[0]);
+const cleanImage = (state: AppState, image: string) => (isImageKey(state, image) ? image : IMAGE_KEYS[0]);
 
 function cleanTarget(group: TaskGroup, target: number | undefined): number {
   const max = group === 'weekly-unlimited' ? TARGET_LIMITS['weekly-unlimited'] : TARGET_LIMITS.weekly;
@@ -94,7 +95,7 @@ export function addTask(state: AppState, input: NewTaskInput, today: DateKey, id
     id,
     name,
     description: cleanDescription(input.description),
-    image: cleanImage(input.image),
+    image: cleanImage(state, input.image),
     cadence: input.group === 'daily' ? { kind: 'daily' } : { kind: 'weekly', target: cleanTarget(input.group, input.target) },
     maxPerDay: input.group === 'weekly-unlimited' ? null : 1,
     startsOn: firstStartDay(today),
@@ -107,7 +108,7 @@ export function editTask(state: AppState, id: TaskId, edit: TaskEdit): AppState 
   const task = findTask(state.tasks, id);
   const name = cleanName(edit.name);
   if (!task || !name) return state;
-  return replaceTask(state, { ...task, name, description: cleanDescription(edit.description), image: cleanImage(edit.image) });
+  return replaceTask(state, { ...task, name, description: cleanDescription(edit.description), image: cleanImage(state, edit.image) });
 }
 
 // Started tasks retire after this Sunday (still scored, penalty included); others go now.

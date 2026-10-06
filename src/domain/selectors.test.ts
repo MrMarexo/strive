@@ -8,7 +8,7 @@ const getTask = (id: string) => seedTasks('2026-01-05').find((t) => t.id === id)
 const SAT = '2026-10-03';
 
 function state(completions: AppState['completions'] = {}): AppState {
-  return { version: 1, points: 0, lastSettledDate: '2026-10-02', completions, graceWeek: '2026-09-21', weekNumber: 1, playerName: 'no_name', rankDays: {}, tasks: seedTasks('2026-01-05') };
+  return { version: 1, points: 0, lastSettledDate: '2026-10-02', completions, graceWeek: '2026-09-21', weekNumber: 1, playerName: 'no_name', rankDays: {}, tasks: seedTasks('2026-01-05'), customImages: [] };
 }
 
 describe('counts', () => {
