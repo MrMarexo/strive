@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { dayOfWeek, type DateKey } from '../domain/dates';
 import { IMAGE_KEYS } from '../domain/imageKeys';
 import { MAX_DESCRIPTION, MAX_TASK_NAME, TARGET_LIMITS, taskStatus, type TaskDef, type TaskGroup } from '../domain/tasks';
+import type { CustomImage } from '../domain/images';
 import { IMAGE_LIBRARY } from './images';
 import { PixelSprite } from './PixelSprite';
 
@@ -16,15 +17,31 @@ interface TaskFormProps {
   group: TaskGroup;
   today: DateKey;
   task?: TaskDef; // present when editing
+  image: string; // controlled by TaskFormDialog
+  onImageChange: (key: string) => void;
+  customImages: CustomImage[];
+  onDraw: () => void;
+  onEditImage: (key: string) => void;
   onSubmit: (values: TaskFormValues) => void;
   onRemove?: () => void;
   onUndoRemove?: () => void;
 }
 
-export function TaskForm({ group, today, task, onSubmit, onRemove, onUndoRemove }: TaskFormProps) {
+export function TaskForm({
+  group,
+  today,
+  task,
+  image,
+  onImageChange,
+  customImages,
+  onDraw,
+  onEditImage,
+  onSubmit,
+  onRemove,
+  onUndoRemove,
+}: TaskFormProps) {
   const [name, setName] = useState(task?.name ?? '');
   const [description, setDescription] = useState(task?.description ?? '');
-  const [image, setImage] = useState(task?.image ?? IMAGE_KEYS[0]);
   const [target, setTarget] = useState(task && task.cadence.kind === 'weekly' ? task.cadence.target : 3);
   const [confirming, setConfirming] = useState(false);
 
@@ -78,12 +95,32 @@ export function TaskForm({ group, today, task, onSubmit, onRemove, onUndoRemove 
               className={key === image ? 'btn image-option selected' : 'btn image-option'}
               aria-label={key}
               aria-pressed={key === image}
-              onClick={() => setImage(key)}
+              onClick={() => onImageChange(key)}
             >
               <PixelSprite map={IMAGE_LIBRARY[key]} size={30} className="option-sprite" />
             </button>
           ))}
+          {customImages.map((custom, i) => (
+            <button
+              key={custom.key}
+              type="button"
+              className={custom.key === image ? 'btn image-option selected' : 'btn image-option'}
+              aria-label={`Custom image ${i + 1}`}
+              aria-pressed={custom.key === image}
+              onClick={() => onImageChange(custom.key)}
+            >
+              <PixelSprite map={custom.map} size={30} className="option-sprite" />
+            </button>
+          ))}
+          <button type="button" className="btn image-option draw-option" aria-label="Draw a new image" onClick={onDraw}>
+            + DRAW
+          </button>
         </div>
+        {customImages.some((custom) => custom.key === image) && (
+          <button type="button" className="btn edit-image" onClick={() => onEditImage(image)}>
+            [ EDIT IMAGE ]
+          </button>
+        )}
       </fieldset>
 
       <label className="field">

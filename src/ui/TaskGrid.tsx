@@ -3,9 +3,10 @@ import type { NewTaskInput, TaskEdit } from '../domain/actions';
 import type { DateKey } from '../domain/dates';
 import { remainingThisWeek, todayCount, willMiss } from '../domain/selectors';
 import { findTask, taskGroup, taskStatus, type TaskDef, type TaskGroup, type TaskId } from '../domain/tasks';
+import { imageUsers } from '../domain/images';
 import type { AppState } from '../domain/types';
 import { AddCard, NEW_TITLES } from './AddCard';
-import { TaskForm } from './TaskForm';
+import { TaskFormDialog } from './TaskFormDialog';
 import { CounterCard } from './CounterCard';
 import { imageMap } from './images';
 import { Modal } from './Modal';
@@ -20,6 +21,9 @@ interface TaskGridProps {
   onEditTask: (id: TaskId, edit: TaskEdit) => void;
   onRemoveTask: (id: TaskId) => void;
   onUndoRemove: (id: TaskId) => void;
+  onAddImage: (map: string[]) => string;
+  onUpdateImage: (key: string, map: string[]) => void;
+  onDeleteImage: (key: string) => void;
 }
 
 const GROUPS: { id: TaskGroup; title: string; info: string }[] = [
@@ -59,6 +63,9 @@ export function TaskGrid({
   onEditTask,
   onRemoveTask,
   onUndoRemove,
+  onAddImage,
+  onUpdateImage,
+  onDeleteImage,
 }: TaskGridProps) {
   const [modal, setModal] = useState<OpenModal | null>(null);
   const opener = useRef<HTMLElement | null>(null);
@@ -93,6 +100,15 @@ export function TaskGrid({
     );
   };
 
+  const imageProps = {
+    customImages: state.customImages,
+    usersOf: (key: string) => imageUsers(state, key),
+    onAddImage,
+    onUpdateImage,
+    onDeleteImage,
+    onClose: close,
+  };
+
   const renderModal = () => {
     if (!modal) return null;
     if (modal.kind === 'group') {
@@ -106,16 +122,16 @@ export function TaskGrid({
     if (modal.kind === 'add') {
       const group = modal.group;
       return (
-        <Modal title={NEW_TITLES[group]} onClose={close}>
-          <TaskForm
-            group={group}
-            today={today}
-            onSubmit={(values) => {
-              onAddTask({ group, ...values });
-              close();
-            }}
-          />
-        </Modal>
+        <TaskFormDialog
+          {...imageProps}
+          title={NEW_TITLES[group]}
+          group={group}
+          today={today}
+          onSubmit={(values) => {
+            onAddTask({ group, ...values });
+            close();
+          }}
+        />
       );
     }
     const task = findTask(state.tasks, modal.id);
@@ -128,25 +144,25 @@ export function TaskGrid({
       );
     }
     return (
-      <Modal title="EDIT TASK" onClose={close}>
-        <TaskForm
-          group={taskGroup(task)}
-          today={today}
-          task={task}
-          onSubmit={({ name, description, image }) => {
-            onEditTask(task.id, { name, description, image });
-            close();
-          }}
-          onRemove={() => {
-            onRemoveTask(task.id);
-            close();
-          }}
-          onUndoRemove={() => {
-            onUndoRemove(task.id);
-            close();
-          }}
-        />
-      </Modal>
+      <TaskFormDialog
+        {...imageProps}
+        title="EDIT TASK"
+        group={taskGroup(task)}
+        today={today}
+        task={task}
+        onSubmit={({ name, description, image }) => {
+          onEditTask(task.id, { name, description, image });
+          close();
+        }}
+        onRemove={() => {
+          onRemoveTask(task.id);
+          close();
+        }}
+        onUndoRemove={() => {
+          onUndoRemove(task.id);
+          close();
+        }}
+      />
     );
   };
 

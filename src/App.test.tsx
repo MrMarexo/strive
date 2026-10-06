@@ -304,4 +304,79 @@ describe('App', () => {
     const card = screen.getByRole('article', { name: 'Reading' });
     expect(within(card).getByRole('img', { name: 'Reading' }).querySelectorAll('rect')).toHaveLength(10);
   });
+
+  it('draws a new image for a new task without losing what was typed', () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: 'ADD DAILY TASK' }));
+    let dialog = screen.getByRole('dialog', { name: 'NEW DAILY TASK' });
+    fireEvent.change(within(dialog).getByRole('textbox', { name: 'NAME' }), { target: { value: 'Meditate' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Draw a new image' }));
+
+    dialog = screen.getByRole('dialog', { name: 'NEW IMAGE' });
+    expect(within(dialog).queryByRole('textbox', { name: 'NAME' })).not.toBeInTheDocument();
+    const pixel = within(dialog).getByRole('button', { name: 'Pixel row 2, column 2, empty' });
+    fireEvent.pointerDown(pixel);
+    fireEvent.pointerUp(pixel);
+    fireEvent.click(within(dialog).getByRole('button', { name: '[ SAVE IMAGE ]' }));
+
+    dialog = screen.getByRole('dialog', { name: 'NEW DAILY TASK' });
+    expect(within(dialog).getByRole('textbox', { name: 'NAME' })).toHaveValue('Meditate');
+    expect(within(dialog).getByRole('button', { name: 'Custom image 1' })).toHaveAttribute('aria-pressed', 'true');
+    expect(within(dialog).getByRole('button', { name: '[ EDIT IMAGE ]' })).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: '[ SAVE ]' }));
+
+    const card = screen.getByRole('article', { name: 'Meditate' });
+    expect(within(card).getByRole('img', { name: 'Meditate' }).querySelectorAll('rect')).toHaveLength(1);
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)!);
+    expect(saved.customImages).toHaveLength(1);
+    expect(saved.tasks.at(-1).image).toBe(saved.customImages[0].key);
+  });
+
+  it('returns from the editor to the form on Escape', () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: 'ADD DAILY TASK' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Draw a new image' }));
+    expect(screen.getByRole('dialog', { name: 'NEW IMAGE' })).toBeInTheDocument();
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screen.getByRole('dialog', { name: 'NEW DAILY TASK' })).toBeInTheDocument();
+  });
+
+  it('edits a custom image a task uses, and blocks deleting it', () => {
+    const map = ['##########', ...Array(9).fill('..........')];
+    const tasks = seedTasks('2026-09-28').map((t) => (t.id === 'reading' ? { ...t, image: 'c-0000000a' } : t));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...freshState('2026-09-30'), tasks, customImages: [{ key: 'c-0000000a', map }] }));
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: 'Edit Reading' }));
+    fireEvent.click(screen.getByRole('button', { name: '[ EDIT IMAGE ]' }));
+    const dialog = screen.getByRole('dialog', { name: 'EDIT IMAGE' });
+    expect(within(dialog).getByText('USED BY: READING')).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: '[ DELETE ]' })).toBeDisabled();
+    const pixel = within(dialog).getByRole('button', { name: 'Pixel row 6, column 6, empty' });
+    fireEvent.pointerDown(pixel);
+    fireEvent.pointerUp(pixel);
+    fireEvent.click(within(dialog).getByRole('button', { name: '[ SAVE IMAGE ]' }));
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'EDIT TASK' })).getByRole('button', { name: '[ SAVE ]' }));
+    const card = screen.getByRole('article', { name: 'Reading' });
+    expect(within(card).getByRole('img', { name: 'Reading' }).querySelectorAll('rect')).toHaveLength(11);
+  });
+
+  it('deletes an unused custom image and falls back to the first built-in image', () => {
+    const map = ['##########', ...Array(9).fill('..........')];
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ ...freshState('2026-09-30'), tasks: seedTasks('2026-09-28'), customImages: [{ key: 'c-0000000a', map }] }),
+    );
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: 'ADD DAILY TASK' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Custom image 1' }));
+    fireEvent.click(screen.getByRole('button', { name: '[ EDIT IMAGE ]' }));
+    const editor = screen.getByRole('dialog', { name: 'EDIT IMAGE' });
+    expect(within(editor).getByText('NOT USED BY ANY TASK')).toBeInTheDocument();
+    fireEvent.click(within(editor).getByRole('button', { name: '[ DELETE ]' }));
+
+    const form = screen.getByRole('dialog', { name: 'NEW DAILY TASK' });
+    expect(within(form).queryByRole('button', { name: 'Custom image 1' })).not.toBeInTheDocument();
+    expect(within(form).getByRole('button', { name: 'book' })).toHaveAttribute('aria-pressed', 'true');
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).customImages).toEqual([]);
+  });
 });

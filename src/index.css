@@ -555,3 +555,14 @@ a.rank:focus-visible {
   display: flex;
   gap: 12px;
 }
+
+.draw-option {
+  font-size: 16px;
+  line-height: 1;
+  border-style: dashed;
+}
+
+.edit-image {
+  justify-self: start;
+  margin-top: 8px;
+}
